@@ -3,7 +3,7 @@ import { useT } from '../i18n'
 import { CATEGORIES, PARTS, LAUNCHERS, TESTS } from '../data/parts'
 import { destinationById } from '../data/destinations'
 import { summarize, singlePointFailures } from '../logic/budget'
-import ShipBlueprint from '../components/ShipBlueprint'
+import { Ship3D } from '../components/Ship3D'
 
 export default function Design() {
   const { t, L } = useT()
@@ -19,7 +19,10 @@ export default function Design() {
         <button className="link" onClick={() => go('crew')}>← {t('back')}</button>
         <h2>{t('design')}</h2>
         <p className="hint">{t('designHint')}</p>
-        <ShipBlueprint sel={selection} crewed={dest.crewed} shield={s.shield} />
+        <div className="ship3d">
+          <Ship3D sel={selection} crewed={dest.crewed} shield={s.shield} />
+          <MissingList sel={selection} crewed={dest.crewed} />
+        </div>
         {CATEGORIES.filter((c) => parts.some((p) => p.cat === c.id)).map((c) => (
           <div key={c.id} className="category">
             <h3>{L(c.name)}</h3>
@@ -100,6 +103,24 @@ function Meter({ label, value, max, unit, text, disabled }) {
         <b>{text || `${value.toLocaleString()} / ${disabled ? '—' : max.toLocaleString()} ${unit}`}</b>
       </div>
       <div className="bar"><div style={{ width: `${Math.min(100, ratio * 100)}%` }} /></div>
+    </div>
+  )
+}
+
+// Red chips for critical systems the spacecraft still lacks
+function MissingList({ sel, crewed }) {
+  const { lang } = useT()
+  const es = lang === 'es'
+  const has = (id) => (sel[id] || 0) > 0
+  const missing = []
+  if (!has('engine')) missing.push(es ? 'Falta motor' : 'No engine')
+  if (!has('hga') && !has('lga')) missing.push(es ? 'Falta antena' : 'No antenna')
+  if (!has('solar') && !has('solarxl') && !has('rtg')) missing.push(es ? 'Falta energía' : 'No power')
+  if (crewed && !has('eclss')) missing.push(es ? 'Falta soporte vital' : 'No life support')
+  return (
+    <div className="ship3d-info">
+      <span className="small">{es ? 'Arrastra para girar tu nave' : 'Drag to rotate your spacecraft'}</span>
+      {missing.length > 0 && <div className="missing">{missing.map((m) => <span key={m}>{m}</span>)}</div>}
     </div>
   )
 }

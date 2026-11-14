@@ -189,3 +189,9 @@ h2 { font-size: 26px; }
   .home-text { margin: 0 auto; }
   .home-chips { justify-content: center; }
 }
+
+/* 3D spacecraft builder */
+.ship3d { position: sticky; top: 0; z-index: 2; height: 340px; margin-bottom: 18px; border: 1px solid var(--line-strong); border-radius: 16px; overflow: hidden; background: #050a1c; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4); }
+.ship3d-info { position: absolute; left: 12px; right: 12px; bottom: 10px; display: flex; justify-content: space-between; align-items: flex-end; gap: 8px; pointer-events: none; }
+.ship3d .missing { position: static; }
+@media (max-width: 900px) { .ship3d { position: relative; height: 300px; } }
