@@ -456,3 +456,40 @@ h2 { font-size: 26px; }
 .view-toggle { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 3; display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: rgba(4, 8, 22, 0.75); border: 1px solid var(--line); backdrop-filter: blur(10px); }
 .view-toggle button { border: 0; background: transparent; color: var(--muted); padding: 8px 16px; border-radius: 999px; font-size: 13.5px; }
 .view-toggle button.on { background: var(--grad); color: #050814; font-weight: 700; }
+
+/* ---------- Closed logbook in the commander's colour ---------- */
+.open-logbook { display: none; }
+.closed-logbook { --cover: #5ad1ff; position: absolute; left: 18px; bottom: 18px; z-index: 3; width: 168px; height: 216px; padding: 0; border: 0; border-radius: 6px 12px 12px 6px; transform: rotate(-5deg); cursor: pointer; text-align: left; color: #fff;
+  background:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='3'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.35 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"),
+    radial-gradient(ellipse at 30% 20%, color-mix(in srgb, var(--cover) 85%, #fff 15%), color-mix(in srgb, var(--cover) 55%, #120a04) 75%);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.55), inset 0 0 0 2px color-mix(in srgb, var(--cover) 40%, #000), inset 0 0 22px rgba(0, 0, 0, 0.45);
+  transition: transform 0.2s, box-shadow 0.2s; animation: book-bob 3s ease-in-out infinite; }
+.closed-logbook:hover { transform: rotate(-2deg) translateY(-6px) scale(1.03); box-shadow: 0 22px 44px rgba(0, 0, 0, 0.6), 0 0 26px color-mix(in srgb, var(--cover) 45%, transparent); }
+@keyframes book-bob { 50% { translate: 0 -4px; } }
+.closed-logbook::before { content: ''; position: absolute; inset: 8px 8px 8px 22px; border: 1.5px dashed rgba(255, 255, 255, 0.45); border-radius: 4px 8px 8px 4px; pointer-events: none; }
+.closed-logbook::after { content: ''; position: absolute; right: -6px; top: 6px; bottom: 6px; width: 8px; border-radius: 0 6px 6px 0; background: repeating-linear-gradient(180deg, #f3ead2 0 2px, #d9cdb0 2px 3px); box-shadow: inset 2px 0 3px rgba(0, 0, 0, 0.25); }
+.cover-spine { position: absolute; left: 0; top: 0; bottom: 0; width: 16px; border-radius: 6px 0 0 6px; background: linear-gradient(90deg, rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.1)); }
+.cover-band { position: absolute; right: 22px; top: -2px; bottom: -2px; width: 10px; background: linear-gradient(90deg, #111, #2a2a2a, #111); box-shadow: 0 0 4px rgba(0, 0, 0, 0.5); }
+.cover-label { position: absolute; left: 30px; right: 42px; top: 34px; padding: 8px 8px 6px; background: #f6efdc; color: #23264a; border-radius: 2px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35); display: flex; flex-direction: column; transform: rotate(1deg); }
+.cover-label small { font-size: 9.5px; letter-spacing: 0.16em; text-transform: uppercase; color: #6b6f8f; }
+.cover-label b { font-family: var(--hand); font-size: 28px; line-height: 1; }
+.cover-label em { font-family: var(--hand); font-style: normal; font-size: 15px; color: #4b4f78; }
+.cover-patch { position: absolute; left: 50px; bottom: 26px; width: 54px; height: 54px; border-radius: 50%; background-size: 260% 100%; background-position: 40% 50%; box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.8), 0 0 0 5px color-mix(in srgb, var(--cover) 60%, #000), inset -10px -8px 16px rgba(0, 0, 0, 0.6); }
+.cover-flag { position: absolute; top: -10px; right: 4px; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: #ef4444; color: #fff; font-weight: 800; box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.35); animation: pulse-flag 1.2s ease-in-out infinite; }
+@keyframes pulse-flag { 50% { box-shadow: 0 0 0 9px rgba(239, 68, 68, 0); transform: scale(1.08); } }
+.cover-hint { position: absolute; left: 0; right: -20px; top: calc(100% + 10px); font-size: 12px; color: var(--text); text-shadow: 0 1px 4px #000; transform: rotate(5deg); }
+
+/* Open logbook: leather in the commander's colour, and the cover swinging open */
+.logbook::before { background: linear-gradient(135deg, color-mix(in srgb, var(--cover, #4a3322) 70%, #1a0f06), color-mix(in srgb, var(--cover, #4a3322) 45%, #0b0703) 55%, color-mix(in srgb, var(--cover, #4a3322) 65%, #140b05)) !important; }
+.cover-opening { position: absolute; top: -10px; bottom: -14px; right: -12px; width: calc(50% + 12px); z-index: 5; border-radius: 0 14px 14px 0; transform-origin: left center; pointer-events: none;
+  background: radial-gradient(ellipse at 30% 20%, color-mix(in srgb, var(--cover) 85%, #fff 15%), color-mix(in srgb, var(--cover) 55%, #120a04) 75%);
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.3); animation: cover-open 0.75s ease-in forwards; }
+@keyframes cover-open { 0% { transform: perspective(1400px) rotateY(0deg); } 99% { transform: perspective(1400px) rotateY(-178deg); opacity: 1; } 100% { transform: perspective(1400px) rotateY(-180deg); opacity: 0; } }
+@media (max-width: 900px) {
+  .closed-logbook { width: 128px; height: 166px; left: 12px; bottom: 64px; }
+  .cover-label b { font-size: 22px; }
+  .cover-patch { width: 40px; height: 40px; left: 40px; bottom: 18px; }
+  .cover-hint { display: none; }
+}
+.closed-logbook { bottom: 44px; } .cover-hint { top: auto; bottom: -30px; }

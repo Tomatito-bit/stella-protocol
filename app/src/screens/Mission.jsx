@@ -49,10 +49,7 @@ export default function Mission() {
           {dest.delayMin > 1 && <Stat label={t('delay')} value={`${dest.delayMin} min`} />}
         </div>
         {!journalOpen && (
-          <button className="open-logbook" onClick={openJournal}>
-            <b>{t('openLogbook')}</b>
-            <span>{event ? t('pendingDecision') : t('readyForDay', { n: m.day + 1 })}</span>
-          </button>
+          <ClosedLogbook day={m.day + 1} pending={!!event} onOpen={openJournal} />
         )}
       </div>
 
@@ -131,10 +128,38 @@ function mood(c, t) {
 }
 
 // The logbook: left page = what happened, right page = today's decisions
+// The commander's colour dresses the logbook cover
+function useCover() {
+  const cmd = crewById[useGame((s) => s.commanderId)]
+  return { color: cmd ? cmd.color : '#5ad1ff', name: cmd ? cmd.name : '' }
+}
+
+// Closed logbook resting in the corner: leather cover in the commander's colour, elastic band and a label
+function ClosedLogbook({ day, pending, onOpen }) {
+  const { t } = useT()
+  const cover = useCover()
+  const destId = useGame((s) => s.destinationId)
+  return (
+    <button className={`closed-logbook ${pending ? 'pending' : ''}`} style={{ '--cover': cover.color }} onClick={onOpen} title={t('openLogbook')}>
+      <span className="cover-spine" aria-hidden />
+      <span className="cover-band" aria-hidden />
+      <span className="cover-label">
+        <small>{t('journal')}</small>
+        <b>{t('day')} {day}</b>
+        <em>{cover.name}</em>
+      </span>
+      <span className="cover-patch" style={{ backgroundImage: `url(/textures/${destId}.jpg)` }} aria-hidden />
+      {pending && <span className="cover-flag">!</span>}
+      <span className="cover-hint">{pending ? t('pendingDecision') : t('readyForDay', { n: day })}</span>
+    </button>
+  )
+}
+
 function Logbook() {
   const { t, L } = useT()
   const { mission: m, event, pick, orderPick, plan, setPlan, pickOption, pickOrder, startDay, closeJournal } = useGame()
   const destId = useGame((s) => s.destinationId)
+  const cover = useCover()
   const [back, setBack] = useState(0) // pages back in history
   const page = m.journal[m.journal.length - 1 - back]
   const ev = event && EVENTS[event]
@@ -143,7 +168,8 @@ function Logbook() {
 
   return (
     <div className="modal-bg logbook-bg">
-      <div className="logbook">
+      <div className="logbook" style={{ '--cover': cover.color }}>
+        <div className="cover-opening" aria-hidden />
         <div className="rings" aria-hidden />
         {/* Left page: the report */}
         <div className="page left">
