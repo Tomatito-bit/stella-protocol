@@ -26,11 +26,6 @@ function Globe({ id, speed }) {
         <sphereGeometry args={[1, 96, 96]} />
         <meshStandardMaterial map={map} roughness={0.95} />
       </mesh>
-      {/* Thin glowing rim so each world stands out against space */}
-      <mesh scale={w.atmosphere ? 1.025 : 1.015}>
-        <sphereGeometry args={[1, 64, 64]} />
-        <meshBasicMaterial color={w.glow} transparent opacity={w.atmosphere ? 0.12 : 0.06} side={THREE.BackSide} blending={THREE.AdditiveBlending} depthWrite={false} />
-      </mesh>
     </group>
   )
 }

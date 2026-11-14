@@ -274,3 +274,4 @@ h2 { font-size: 26px; }
   .legacy { grid-template-columns: 1fr; }
   .legacy-planet { position: relative; inset: auto; height: 36dvh; }
 }
+.mission-view { height: 100%; } .mission-view > div:first-child { position: absolute !important; inset: 0; }
