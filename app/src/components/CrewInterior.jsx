@@ -16,6 +16,7 @@ const ROOM_NAMES = {
   Quarters: { es: 'DORMITORIO', en: 'QUARTERS' }, Galley: { es: 'COMEDOR', en: 'GALLEY' }, LifeSupport: { es: 'SOPORTE VITAL', en: 'LIFE SUPPORT' },
   Airlock: { es: 'ESCLUSA', en: 'AIRLOCK' }, Engines: { es: 'MOTORES', en: 'ENGINES' },
 }
+const NO_MEDBAY = { es: 'SIN ENFERMERÍA', en: 'NO MEDBAY' }
 const WALK = 2.2 // metres per second (a little faster than real life so it reads from above)
 
 function useNodes(scene) {
@@ -156,20 +157,51 @@ function labelSpot(nodes, room) {
   return d ? c.clone().lerp(d, 0.72) : c
 }
 
-function Deck({ places }) {
+// The deck reflects the spacecraft the player designed: engines, solar wings, lab racks,
+// medical bay, life-support tanks and shielding all follow the parts that were chosen.
+function fitToDesign(source, sel, shield) {
+  const scene = source.clone(true)
+  const n = (id) => sel[id] || 0
+  // Blender adds .001 to repeated names and three.js drops the dot (LabRack0.001 → LabRack0001)
+  const base = (name) => name.replace(/\.?\d{3}$/, '')
+  const show = {
+    Nacelle1: n('engine') >= 2, NacelleRing1: n('engine') >= 2, Nozzle1: n('engine') >= 2, Exhaust1: n('engine') >= 2,
+    Wing0: n('solar') + n('solarxl') > 0, Wing1: n('solar') + n('solarxl') > 0, WingNeon0: n('solar') + n('solarxl') > 0, WingNeon1: n('solar') + n('solarxl') > 0,
+    Reactor1: n('rtg') > 0 || n('engine') >= 2, ReactorGlow1: n('rtg') > 0 || n('engine') >= 2,
+    MedBed0: n('medkit') > 0, MedBed1: n('medkit') > 0, MedPillow0: n('medkit') > 0, MedPillow1: n('medkit') > 0,
+    MedCabinet: n('medkit') > 0, MedCrossH: n('medkit') > 0, MedCrossV: n('medkit') > 0,
+    Scrubber: n('eclss') > 0, ScrubberLed: n('eclss') > 0,
+  }
+  const instruments = ['camera', 'spectrometer', 'radar', 'magnetometer', 'drill'].filter((id) => n(id)).length
+  for (let i = 0; i < 3; i++) { show[`LabRack${i}`] = i < instruments; show[`LabRackLed${i}`] = i < instruments }
+  const tanks = Math.min(3, n('eclss') + n('supplies'))
+  for (let i = 0; i < 3; i++) show[`WaterTank${i}`] = i < tanks
+  scene.traverse((o) => {
+    const k = base(o.name)
+    if (k in show) o.visible = show[k]
+    // Solar wings get real cells; heavy shielding turns the hull silver
+    if (o.isMesh && (k === 'Wing0' || k === 'Wing1')) o.material = new THREE.MeshStandardMaterial({ color: '#1d3f9a', metalness: 0.6, roughness: 0.25, emissive: '#081a44' })
+    if (o.isMesh && k === 'ShipBody' && shield >= 2) o.material = new THREE.MeshStandardMaterial({ color: '#c9d1dc', metalness: 0.9, roughness: 0.25 })
+  })
+  return scene
+}
+
+function Deck({ places, sel, shield }) {
   const { L } = useT()
-  const { scene } = useGLTF('/models/deck.glb')
+  const { scene: source } = useGLTF('/models/deck.glb')
+  const scene = useMemo(() => fitToDesign(source, sel || {}, shield || 0), [source, sel, shield])
   const nodes = useNodes(scene)
+  const hasMed = (sel?.medkit || 0) > 0
   return (
     <>
       <primitive object={scene} />
-      {Object.entries(ROOM_NAMES).map(([room, name]) => nodes[`Room_${room}`] && <RoomLabel key={room} text={L(name)} at={labelSpot(nodes, room)} />)}
+      {Object.entries(ROOM_NAMES).map(([room, name]) => nodes[`Room_${room}`] && <RoomLabel key={room} text={room === 'Medbay' && !hasMed ? L(NO_MEDBAY) : L(name)} at={labelSpot(nodes, room)} />)}
       {places.map((p) => <Astronaut key={p.id} place={p} nodes={nodes} />)}
     </>
   )
 }
 
-export const CrewInterior = memo(function CrewInterior({ crew, plan, event, destId }) {
+export const CrewInterior = memo(function CrewInterior({ crew, plan, event, destId, sel, shield }) {
   const places = crewPlaces(crew, { plan, event })
   const alarm = event === 'solarStorm' || event === 'radiationBelt' || event === 'co2' || event === 'panic'
   return (
@@ -182,7 +214,7 @@ export const CrewInterior = memo(function CrewInterior({ crew, plan, event, dest
       {alarm && <AlarmLight />}
       <Suspense fallback={null}>
         <Drift>
-          <Deck places={places} />
+          <Deck places={places} sel={sel} shield={shield} />
         </Drift>
         {destId && <WorldBelow destId={destId} />}
       </Suspense>

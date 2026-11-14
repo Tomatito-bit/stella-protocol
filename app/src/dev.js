@@ -14,16 +14,17 @@ export function loadDemo() {
   const screen = q.get('demo')
   if (!screen) return
   const dest = q.get('dest') || 'mars'
-  const base = { destinationId: dest, commanderId: 'valeria', selection: SAMPLE[dest], launcherId: dest === 'europa' ? 'heavy' : 'superheavy', tests: ['vacuum', 'vibration'] }
+  const LITE = { solar: 0, rtg: 1, engine: 1, tank: 3, hga: 1, camera: 1, eclss: 1, supplies: 1, spares: 1 }
+  const base = { destinationId: dest, commanderId: q.get('cmd') || 'valeria', selection: q.has('lite') ? LITE : SAMPLE[dest], launcherId: dest === 'europa' ? 'heavy' : 'superheavy', tests: ['vacuum', 'vibration'] }
   if (screen === 'launch') {
     useGame.setState({ ...base, screen })
     return
   }
   if (screen === 'mission' || screen === 'legacy') {
     const d = destinationById[dest]
-    let m = startMission(d, base.selection, base.launcherId, base.tests, 'valeria', 4242)
+    let m = startMission(d, base.selection, base.launcherId, base.tests, base.commanderId, 4242)
     const days = screen === 'legacy' ? m.totalDays : 3
-    for (let i = 0; i < days && !m.over; i++) m = nextDay(m, d, 'valeria', 'science', null)
+    for (let i = 0; i < days && !m.over; i++) m = nextDay(m, d, base.commanderId, 'science', null)
     useGame.setState({ ...base, screen, mission: m, event: q.get('event'), journalOpen: q.has('logbook') })
 
     return
