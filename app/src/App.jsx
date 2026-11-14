@@ -5,9 +5,10 @@ import Destination from './screens/Destination'
 import Crew from './screens/Crew'
 import Design from './screens/Design'
 import Review from './screens/Review'
-import Placeholder from './screens/Placeholder'
+import Mission from './screens/Mission'
+import Legacy from './screens/Legacy'
 
-const SCREENS = { home: Home, destination: Destination, crew: Crew, design: Design, review: Review, mission: Placeholder, legacy: Placeholder }
+const SCREENS = { home: Home, destination: Destination, crew: Crew, design: Design, review: Review, mission: Mission, legacy: Legacy }
 const STEP_OF = { destination: 0, crew: 1, design: 2, review: 3, mission: 4, legacy: 5 }
 
 export default function App() {

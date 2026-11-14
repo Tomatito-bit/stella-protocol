@@ -1,6 +1,6 @@
 # Final Concept
 
-**Working title:** *Houston, You Decide*. It can be changed.
+**Name:** *Stella Protocol*.
 
 **In one sentence:** you design a real NASA mission at your own pace, defend it before a GO / NO-GO board, and then live it **day by day** as Flight Director, taking care of the spacecraft and the crew until the end.
 

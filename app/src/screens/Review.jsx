@@ -6,7 +6,7 @@ import { reviewBoard } from '../logic/review'
 
 export default function Review() {
   const { t, L } = useT()
-  const { selection, launcherId, tests, go } = useGame()
+  const { selection, launcherId, tests, go, launch } = useGame()
   const dest = destinationById[useGame((s) => s.destinationId)]
   const s = summarize(dest, selection, launcherId, tests)
   const board = reviewBoard(dest, selection, s, tests)
@@ -43,7 +43,7 @@ export default function Review() {
 
       <div className="actions">
         <button className="btn ghost" onClick={() => go('design')}>{t('fix')}</button>
-        <button className={`btn big ${board.noGo ? 'danger' : ''}`} onClick={() => go('mission')}>{board.noGo ? t('launchAnyway') : t('launch')}</button>
+        <button className={`btn big ${board.noGo ? 'danger' : ''}`} onClick={launch}>{board.noGo ? t('launchAnyway') : t('launch')}</button>
       </div>
     </section>
   )

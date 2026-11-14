@@ -164,11 +164,11 @@ function RcsQuad({ m, position, rotation }) {
   )
 }
 
-function Ship({ sel, crewed, shield }) {
+export function Ship({ sel, crewed, shield, spin = 0.12 }) {
   const m = useMaterials()
   const root = useRef()
   useFrame((_, dt) => {
-    if (root.current) root.current.rotation.y += dt * 0.12
+    if (root.current) root.current.rotation.y += dt * spin
   })
   const tanks = n(sel, 'tank')
   const engines = n(sel, 'engine')

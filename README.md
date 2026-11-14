@@ -1,4 +1,4 @@
-# NASA Space Apps Challenge 2026 · Team
+# Stella Protocol · NASA Space Apps Challenge 2026
 
 Challenge: **Space Mission Design Game**. Dates: Saturday, November 14 and Sunday, November 15, 2026.
 
