@@ -24,7 +24,7 @@ export default function Mission() {
     <section className="mission">
       <div className="mission-view">
         {inside
-          ? <CrewInterior crew={m.crew} plan={plan} event={event} />
+          ? <CrewInterior crew={m.crew} plan={plan} event={event} destId={dest.id} />
           : <MissionScene destId={dest.id} sel={m.parts} crewed={dest.crewed} shield={m.shield} storm={storm} safe={plan === 'rest'} />}
         {m.crew && (
           <div className="view-toggle">

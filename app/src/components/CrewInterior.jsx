@@ -1,6 +1,6 @@
 import { Suspense, memo, useMemo, useRef } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { OrbitControls, useGLTF } from '@react-three/drei'
+import { OrbitControls, Stars, useGLTF, useTexture } from '@react-three/drei'
 import * as THREE from 'three'
 import { crewById } from '../data/crew'
 import { crewPlaces, SPOT_ROOM } from '../logic/crewPlaces'
@@ -169,20 +169,24 @@ function Deck({ places }) {
   )
 }
 
-export const CrewInterior = memo(function CrewInterior({ crew, plan, event }) {
+export const CrewInterior = memo(function CrewInterior({ crew, plan, event, destId }) {
   const places = crewPlaces(crew, { plan, event })
   const alarm = event === 'solarStorm' || event === 'radiationBelt' || event === 'co2' || event === 'panic'
   return (
-    <Canvas camera={{ position: [0, 21, 11], fov: 42 }} dpr={[1, 2]} gl={{ toneMapping: THREE.ACESFilmicToneMapping }}>
+    <Canvas camera={{ position: [15, 21, 21], fov: 40 }} dpr={[1, 2]} gl={{ toneMapping: THREE.ACESFilmicToneMapping }}>
       <color attach="background" args={['#02040c']} />
       <ambientLight intensity={0.9} />
       <hemisphereLight args={['#e6eeff', '#202638', 0.8]} />
       <directionalLight position={[4, 12, 6]} intensity={1.8} />
+      <Stars radius={120} depth={60} count={3000} factor={4} fade speed={0.3} />
       {alarm && <AlarmLight />}
       <Suspense fallback={null}>
-        <Deck places={places} />
+        <Drift>
+          <Deck places={places} />
+        </Drift>
+        {destId && <WorldBelow destId={destId} />}
       </Suspense>
-      <OrbitControls target={[0, 0, 0]} enablePan={false} minDistance={12} maxDistance={32} minPolarAngle={0.15} maxPolarAngle={0.9} />
+      <OrbitControls target={[-1, 0, 0]} enablePan={false} minDistance={14} maxDistance={40} minPolarAngle={0.2} maxPolarAngle={1.1} />
     </Canvas>
   )
 })
@@ -192,4 +196,27 @@ function AlarmLight() {
   const ref = useRef()
   useFrame(({ clock }) => { if (ref.current) ref.current.intensity = 6 + Math.sin(clock.getElapsedTime() * 6) * 5 })
   return <pointLight ref={ref} position={[0, 4, 0]} distance={30} color="#ff3030" />
+}
+
+// The whole ship floats gently, like it is drifting in orbit
+function Drift({ children }) {
+  const ref = useRef()
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime()
+    if (ref.current) { ref.current.position.y = Math.sin(t * 0.4) * 0.15; ref.current.rotation.z = Math.sin(t * 0.25) * 0.01 }
+  })
+  return <group ref={ref}>{children}</group>
+}
+
+// The destination world far below the ship
+function WorldBelow({ destId }) {
+  const map = useTexture(`/textures/${destId}.jpg`)
+  const ref = useRef()
+  useFrame((_, dt) => { if (ref.current) ref.current.rotation.y += dt * 0.01 })
+  return (
+    <mesh ref={ref} position={[-6, -48, -30]}>
+      <sphereGeometry args={[40, 96, 96]} />
+      <meshStandardMaterial map={map} roughness={1} />
+    </mesh>
+  )
 }
