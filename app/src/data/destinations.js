@@ -29,7 +29,7 @@ export const DESTINATIONS = [
     delayMin: 12,
     radiation: 2,
     color: '#f97316',
-    realMission: 'Perseverance · Mars crewed missions',
+    realMission: { es: 'Perseverance · futuras misiones tripuladas', en: 'Perseverance · future crewed missions' },
     summary: {
       es: 'La primera tripulación en órbita de Marte. Tus órdenes tardan minutos en llegar: la tripulación decide sola en las emergencias.',
       en: 'The first crew in Mars orbit. Your orders take minutes to arrive: the crew decides alone in emergencies.',

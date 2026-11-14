@@ -146,3 +146,4 @@ p { line-height: 1.5; }
 .missing { position: absolute; left: 10px; bottom: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
 .missing span { font-size: 12px; color: var(--nogo); border: 1px dashed var(--nogo); border-radius: 999px; padding: 2px 10px; background: rgba(5, 8, 20, 0.8); }
 @media (max-width: 900px) { .blueprint { position: relative; } }
+.card { display: flex; flex-direction: column; justify-content: flex-start; }

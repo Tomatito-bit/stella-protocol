@@ -29,7 +29,7 @@ export default function Destination() {
                 <div><dt>{t('sunlight')}</dt><dd>{sun}%</dd></div>
                 <div><dt>{t('delay')}</dt><dd>{delay}</dd></div>
               </dl>
-              <p className="small"><b>{t('realMission')}:</b> {d.realMission}</p>
+              <p className="small"><b>{t('realMission')}:</b> {L(d.realMission)}</p>
               <p className="small risk"><b>{t('keyRisk')}:</b> {L(d.keyRisk)}</p>
             </button>
           )
