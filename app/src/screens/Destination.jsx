@@ -1,6 +1,7 @@
 import { useGame } from '../store'
 import { useT } from '../i18n'
 import { DESTINATIONS } from '../data/destinations'
+import { Planet3D } from '../components/Planet3D'
 
 export default function Destination() {
   const { t, L } = useT()
@@ -17,7 +18,7 @@ export default function Destination() {
           const delay = d.delayMin < 1 ? '~1 s' : `~${d.delayMin} min`
           return (
             <button key={d.id} className="card destination" style={{ '--accent': d.color }} onClick={() => choose(d.id)}>
-              <div className="planet" />
+              <div className="planet3d"><Planet3D id={d.id} speed={0.15} /></div>
               <div className="card-top">
                 <h3>{L(d.name)}</h3>
                 <span className="tag">{d.crewed ? t('crewed') : t('robotic')}</span>

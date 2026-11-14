@@ -147,3 +147,45 @@ p { line-height: 1.5; }
 .missing span { font-size: 12px; color: var(--nogo); border: 1px dashed var(--nogo); border-radius: 999px; padding: 2px 10px; background: rgba(5, 8, 20, 0.8); }
 @media (max-width: 900px) { .blueprint { position: relative; } }
 .card { display: flex; flex-direction: column; justify-content: flex-start; }
+
+/* ---------- Look & feel v2: more striking ---------- */
+:root { --title: 'Orbitron', var(--font); }
+body { background: #03050d; }
+body::before { content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(1px 1px at 12% 18%, #fff9, transparent), radial-gradient(1px 1px at 72% 64%, #fff8, transparent),
+    radial-gradient(1.5px 1.5px at 38% 82%, #fffa, transparent), radial-gradient(1px 1px at 88% 12%, #fff7, transparent),
+    radial-gradient(1px 1px at 55% 35%, #fff6, transparent), radial-gradient(1.5px 1.5px at 22% 55%, #fff8, transparent),
+    radial-gradient(ellipse 60% 50% at 15% 0%, rgba(56, 108, 255, 0.22), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 100% 100%, rgba(139, 92, 246, 0.18), transparent 70%);
+  background-size: 420px 420px, 380px 380px, 520px 520px, 460px 460px, 300px 300px, 560px 560px, 100% 100%, 100% 100%; }
+h1, h2, .brand { font-family: var(--title); letter-spacing: 0.02em; }
+h2 { font-size: 26px; }
+.header { background: rgba(3, 5, 13, 0.7); border-bottom-color: rgba(90, 209, 255, 0.18); }
+.card, .part, .console, .choice { backdrop-filter: blur(10px); background: linear-gradient(160deg, rgba(22, 32, 70, 0.75), rgba(10, 14, 34, 0.85)); }
+.card { box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35); }
+.card:hover { box-shadow: 0 12px 40px color-mix(in srgb, var(--accent) 30%, transparent); }
+.btn { box-shadow: 0 6px 24px rgba(90, 209, 255, 0.25); transition: transform 0.15s, box-shadow 0.15s; }
+.btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 34px rgba(139, 92, 246, 0.45); }
+.btn.glow { animation: pulso 2.4s ease-in-out infinite; }
+@keyframes pulso { 50% { box-shadow: 0 0 0 8px rgba(90, 209, 255, 0.08), 0 10px 40px rgba(139, 92, 246, 0.5); } }
+
+/* Home with a real 3D planet */
+.home { position: relative; max-width: none; display: grid; grid-template-columns: 1.1fr 1fr; align-items: center; min-height: calc(100dvh - 53px); padding: 0 6vw; text-align: left; overflow: hidden; }
+.home-planet { position: absolute; inset: 0 -10% 0 35%; }
+.home-text { position: relative; z-index: 1; max-width: 620px; }
+.home h1 { font-size: clamp(34px, 5.5vw, 70px); line-height: 1.05; margin-bottom: 18px; }
+.home .lead { max-width: 520px; }
+.home-chips { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; padding: 0; margin: 28px 0 0; }
+.home-chips li { font-size: 12.5px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(90, 209, 255, 0.3); color: var(--muted); background: rgba(10, 16, 40, 0.6); }
+
+/* Destination cards with 3D worlds */
+.planet3d { height: 170px; margin: -6px -6px 8px; border-radius: 12px; background: radial-gradient(circle at 50% 55%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 65%); }
+.planet { display: none; }
+
+@media (max-width: 900px) {
+  .home { grid-template-columns: 1fr; padding: 24px 18px; text-align: center; align-content: start; }
+  .home-planet { position: relative; inset: auto; height: 42dvh; margin: 0 -18px; }
+  .home-text { margin: 0 auto; }
+  .home-chips { justify-content: center; }
+}
