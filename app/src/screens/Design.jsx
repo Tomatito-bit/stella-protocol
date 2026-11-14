@@ -3,6 +3,7 @@ import { useT } from '../i18n'
 import { CATEGORIES, PARTS, LAUNCHERS, TESTS } from '../data/parts'
 import { destinationById } from '../data/destinations'
 import { summarize, singlePointFailures } from '../logic/budget'
+import ShipBlueprint from '../components/ShipBlueprint'
 
 export default function Design() {
   const { t, L } = useT()
@@ -18,6 +19,7 @@ export default function Design() {
         <button className="link" onClick={() => go('crew')}>← {t('back')}</button>
         <h2>{t('design')}</h2>
         <p className="hint">{t('designHint')}</p>
+        <ShipBlueprint sel={selection} crewed={dest.crewed} shield={s.shield} />
         {CATEGORIES.filter((c) => parts.some((p) => p.cat === c.id)).map((c) => (
           <div key={c.id} className="category">
             <h3>{L(c.name)}</h3>
