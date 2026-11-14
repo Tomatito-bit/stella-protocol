@@ -123,6 +123,7 @@ function mood(c, t) {
 function Logbook() {
   const { t, L } = useT()
   const { mission: m, event, pick, orderPick, plan, setPlan, pickOption, pickOrder, startDay, closeJournal } = useGame()
+  const destId = useGame((s) => s.destinationId)
   const [back, setBack] = useState(0) // pages back in history
   const page = m.journal[m.journal.length - 1 - back]
   const ev = event && EVENTS[event]
@@ -135,6 +136,11 @@ function Logbook() {
         <div className="rings" aria-hidden />
         {/* Left page: the report */}
         <div className="page left">
+          <div className="coffee" aria-hidden />
+          <figure className="polaroid">
+            <div className="polaroid-img" style={{ backgroundImage: `url(/textures/${destId}.jpg)` }} />
+            <figcaption>{t('day')} {m.day}</figcaption>
+          </figure>
           <div className="page-head">
             <span className="tiny">{t('journal')}</span>
             <h2>{page.day === 0 ? t('arrival') : `${t('day')} ${page.day}`}</h2>
@@ -182,7 +188,7 @@ function Logbook() {
                   )
                 })}
               </div>
-              <p className="fact-note">{L(ev.fact)}</p>
+              <p className="fact-note"><span className="tape" aria-hidden />{L(ev.fact)}</p>
             </div>
           ) : (
             <p className="hand calm">{t('noEvent')}</p>

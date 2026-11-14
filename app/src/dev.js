@@ -15,6 +15,10 @@ export function loadDemo() {
   if (!screen) return
   const dest = q.get('dest') || 'mars'
   const base = { destinationId: dest, commanderId: 'valeria', selection: SAMPLE[dest], launcherId: dest === 'europa' ? 'heavy' : 'superheavy', tests: ['vacuum', 'vibration'] }
+  if (screen === 'launch') {
+    useGame.setState({ ...base, screen })
+    return
+  }
   if (screen === 'mission' || screen === 'legacy') {
     const d = destinationById[dest]
     let m = startMission(d, base.selection, base.launcherId, base.tests, 'valeria', 4242)

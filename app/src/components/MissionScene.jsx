@@ -11,7 +11,7 @@ const GLOW = { moon: '#cbd5e1', mars: '#ff8a4c', europa: '#9fd8ff' }
 function World({ id }) {
   const map = useTexture(MAPS[id], (t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8 })
   const ref = useRef()
-  useFrame((_, dt) => { if (ref.current) ref.current.rotation.y += dt * 0.012 })
+  useFrame((_, dt) => { if (ref.current) ref.current.rotation.y += dt * 0.025 })
   return (
     <group position={[0, -7.2, -2]} rotation={[0.35, 0, 0.12]}>
       <mesh ref={ref}>
@@ -78,16 +78,19 @@ function Storm() {
 
 function Orbiting({ sel, crewed, shield, safe }) {
   const ref = useRef()
+  // The craft really orbits: it rises over the planet's limb, crosses the sky and sets again
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime()
+    const a = ((t * 0.035 + 0.55) % 1.3) - 0.65
+    const R = 8.1
     if (ref.current) {
-      ref.current.position.set(Math.sin(t * 0.15) * 1.2, 0.6 + Math.sin(t * 0.4) * 0.08, Math.cos(t * 0.15) * 0.4)
-      ref.current.rotation.z = Math.sin(t * 0.3) * 0.05
+      ref.current.position.set(Math.sin(a) * R, -7.2 + Math.cos(a) * R, -0.6 + Math.sin(t * 0.2) * 0.2)
+      ref.current.rotation.set(0, safe ? 0 : t * 0.05, -a * 0.9)
     }
   })
   return (
-    <group ref={ref} scale={0.55}>
-      <Ship sel={sel} crewed={crewed} shield={shield} spin={safe ? 0 : 0.05} />
+    <group ref={ref} scale={0.5}>
+      <Ship sel={sel} crewed={crewed} shield={shield} spin={0} />
     </group>
   )
 }

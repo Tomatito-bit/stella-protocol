@@ -5,11 +5,12 @@ import Destination from './screens/Destination'
 import Crew from './screens/Crew'
 import Design from './screens/Design'
 import Review from './screens/Review'
+import Launch from './screens/Launch'
 import Mission from './screens/Mission'
 import Legacy from './screens/Legacy'
 
-const SCREENS = { home: Home, destination: Destination, crew: Crew, design: Design, review: Review, mission: Mission, legacy: Legacy }
-const STEP_OF = { destination: 0, crew: 1, design: 2, review: 3, mission: 4, legacy: 5 }
+const SCREENS = { home: Home, destination: Destination, crew: Crew, design: Design, review: Review, launch: Launch, mission: Mission, legacy: Legacy }
+const STEP_OF = { destination: 0, crew: 1, design: 2, review: 3, launch: 4, mission: 5, legacy: 6 }
 
 export default function App() {
   const screen = useGame((s) => s.screen)

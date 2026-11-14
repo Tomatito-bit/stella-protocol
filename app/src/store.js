@@ -4,7 +4,7 @@ import { partById } from './data/parts'
 import { destinationById } from './data/destinations'
 import { startMission, rollEvent, nextDay, giveOrder } from './logic/mission'
 
-export const SCREENS = ['home', 'destination', 'crew', 'design', 'review', 'mission', 'legacy']
+export const SCREENS = ['home', 'destination', 'crew', 'design', 'review', 'launch', 'mission', 'legacy']
 
 export const useGame = create((set, get) => ({
   lang: DEFAULT_LANG,
