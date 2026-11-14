@@ -451,3 +451,8 @@ h2 { font-size: 26px; }
   .select-thumb span:last-child { display: none; }
   .select-thumb { padding: 4px; }
 }
+
+/* Ship / crew view toggle */
+.view-toggle { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 3; display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: rgba(4, 8, 22, 0.75); border: 1px solid var(--line); backdrop-filter: blur(10px); }
+.view-toggle button { border: 0; background: transparent; color: var(--muted); padding: 8px 16px; border-radius: 999px; font-size: 13.5px; }
+.view-toggle button.on { background: var(--grad); color: #050814; font-weight: 700; }

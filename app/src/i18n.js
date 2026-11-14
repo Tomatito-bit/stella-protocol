@@ -77,6 +77,7 @@ const STRINGS = {
     ph_insertion: 'Encendido de frenado: inserción en órbita.',
     step_ignition: 'Ignición', step_liftoff: 'Despegue', step_maxq: 'Max-Q', step_meco: 'Separación', step_fairing: 'Cofia', step_transfer: 'Crucero', step_insertion: 'Órbita',
     missionOf: 'Misión {n} de {total}', chooseThis: 'Elegir esta misión', recommended: 'Usar nave recomendada', clear: 'Vaciar',
+    viewShip: 'Nave', viewCrew: 'Tripulación por dentro',
     lang: 'English',
   },
   en: {
@@ -154,6 +155,7 @@ const STRINGS = {
     ph_insertion: 'Braking burn: orbit insertion.',
     step_ignition: 'Ignition', step_liftoff: 'Liftoff', step_maxq: 'Max-Q', step_meco: 'Separation', step_fairing: 'Fairing', step_transfer: 'Cruise', step_insertion: 'Orbit',
     missionOf: 'Mission {n} of {total}', chooseThis: 'Choose this mission', recommended: 'Use recommended spacecraft', clear: 'Clear',
+    viewShip: 'Spacecraft', viewCrew: 'Crew inside',
     lang: 'Español',
   },
 }

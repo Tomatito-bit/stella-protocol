@@ -6,6 +6,7 @@ import { crewById } from '../data/crew'
 import { EVENTS } from '../data/events'
 import { biometrics } from '../logic/mission'
 import { MissionScene } from '../components/MissionScene'
+import { CrewInterior } from '../components/CrewInterior'
 
 const PLANS = ['science', 'transmit', 'rest']
 const ORDERS = ['rest', 'medical', 'exercise', 'talk']
@@ -16,11 +17,21 @@ export default function Mission() {
   const dest = destinationById[useGame((s) => s.destinationId)]
   const storm = event === 'solarStorm' || event === 'radiationBelt'
   const pct = Math.min(100, Math.round((m.science / m.goal) * 100))
+  const [view, setView] = useState(() => (import.meta.env.DEV && new URLSearchParams(location.search).has('inside') ? 'crew' : 'ship'))
+  const inside = !!m.crew && view === 'crew'
 
   return (
     <section className="mission">
       <div className="mission-view">
-        <MissionScene destId={dest.id} sel={m.parts} crewed={dest.crewed} shield={m.shield} storm={storm} safe={plan === 'rest'} />
+        {inside
+          ? <CrewInterior crew={m.crew} plan={plan} event={event} />
+          : <MissionScene destId={dest.id} sel={m.parts} crewed={dest.crewed} shield={m.shield} storm={storm} safe={plan === 'rest'} />}
+        {m.crew && (
+          <div className="view-toggle">
+            <button className={!inside ? 'on' : ''} onClick={() => setView('ship')}>{t('viewShip')}</button>
+            <button className={inside ? 'on' : ''} onClick={() => setView('crew')}>{t('viewCrew')}</button>
+          </div>
+        )}
         <div className="hud top">
           <div className="hud-box">
             <span className="hud-label">{L(dest.name)}</span>
