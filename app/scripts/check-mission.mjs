@@ -31,5 +31,6 @@ for (const d of DESTINATIONS) for (const cmd of ['valeria', 'diego', 'mei', 'kwa
     res[g.level]++
     pctSum += g.pct
   }
-  console.log(d.id.padEnd(7), cmd.padEnd(7), policy.padEnd(5), `avg ${Math.round(pctSum / 200)}%`, JSON.stringify(res), 'events:', Object.keys(seen).length)
+  const social = ['routineClash','pilotEngineer','scienceVsSafety','enginesHot','fatigueIgnored','thirdQuarter','disobedience','deadlock','authority','panic'].map((k) => `${k}:${seen[k] || 0}`).join(' ')
+  console.log(d.id.padEnd(7), cmd.padEnd(7), policy.padEnd(5), `avg ${Math.round(pctSum / 200)}%`, JSON.stringify(res), process.env.SOCIAL ? social : `events: ${Object.keys(seen).length}`)
 }

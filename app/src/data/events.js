@@ -1,6 +1,8 @@
+import { SOCIAL_EVENTS } from './socialEvents'
+
 // Mission events. Each one is based on a real hazard (research/02, 03 and 07).
 // risk: 'safe' | 'medium' | 'risky' is shown on every option so the player sees the trade-off.
-export const EVENTS = {
+const BASE_EVENTS = {
   solarStorm: {
     hazard: { es: 'Radiación', en: 'Radiation' },
     title: { es: 'Tormenta solar en camino', en: 'Solar storm incoming' },
@@ -220,6 +222,8 @@ export const EVENTS = {
     ],
   },
 }
+
+export const EVENTS = { ...BASE_EVENTS, ...SOCIAL_EVENTS }
 
 // Hidden defects that environmental tests would have caught (team research doc 06)
 export const DEFECTS = {

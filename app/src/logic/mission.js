@@ -62,6 +62,8 @@ export function startMission(dest, sel, launcherId, tests, commanderId, seed) {
     defects,
     shield: s.shield,
     orderDay: -1,
+    effects: { apathy: false, panic: 0, frustrated: 0, medicBusy: 0, divided: false, halfDays: 0, errorRisk: 0 },
+    lastStorm: false,
     over: false,
     lost: null,
     decisions: [],
@@ -75,6 +77,23 @@ export function rollEvent(m, dest, commanderId) {
   const st = styleOf(commanderId)
   const pool = []
   const add = (id, w) => pool.push([id, w])
+  if (dest.crewed && m.crew) {
+    const avg = (f) => m.crew.reduce((a, c) => a + c[f], 0) / m.crew.length
+    const morale = avg('morale')
+    const energy = avg('energy')
+    const stressed = morale < 45 || m.dose > 15 || m.supplies < 3
+    const phase = m.day / m.totalDays
+    if (stressed && morale < 32) add('panic', 0.35)
+    if (m.lastStorm && morale < 60) add('deadlock', 0.4)
+    if (energy < 40 || m.dose > 18) add('authority', 0.18)
+    if (dest.radiation >= 2) add('disobedience', stressed ? 0.1 : 0.04)
+    if (phase >= 0.45 && phase <= 0.75 && !m.thirdSeen) add('thirdQuarter', 0.35)
+    if (energy < 50) add('fatigueIgnored', 0.25)
+    add('scienceVsSafety', 0.05)
+    add('enginesHot', 0.04)
+    add('routineClash', 0.07)
+    add('pilotEngineer', 0.05)
+  }
   add('solarStorm', 0.09 * dest.radiation * st.danger)
   if (dest.id === 'europa') add('radiationBelt', 0.22 * st.danger)
   add('micrometeoroid', 0.07 * st.danger)
@@ -107,6 +126,7 @@ export function nextDay(m0, dest, commanderId, plan, choice) {
   const note = (type, es, en) => notes.push({ type, text: { es, en } })
   let sciFactor = plan === 'science' ? 1 : plan === 'transmit' ? 0.3 : 0
   let doseToday = 0.4 * dest.radiation // galactic cosmic rays, always there
+  let powerPenalty = 1
   const crewHit = (field, d) => m.crew && m.crew.forEach((c) => { c[field] = clamp(c[field] + d) })
   const takeSpare = () => { if (m.spares > 0) { m.spares -= 1; return true } return false }
   const breakPart = (pred) => {
@@ -154,12 +174,12 @@ export function nextDay(m0, dest, commanderId, plan, choice) {
     if (event === 'co2') {
       const eng = m.crew.find((c) => c.duty === 'engineer')
       if (option === 'repair' && takeSpare()) note('good', 'Filtro nuevo: el aire está limpio.', 'New filter: the air is clean.')
-      else if (option === 'improvise' && (eng.energy > 50 || m.drilled)) note('good', 'La ingeniera improvisó un filtro como en el Apolo 13. ¡Funcionó!', 'The engineer rigged a filter like Apollo 13. It worked!')
+      else if (option === 'improvise' && (eng.energy > 50 || m.drilled) && !(m0.effects && m0.effects.frustrated)) note('good', 'La ingeniera improvisó un filtro como en el Apolo 13. ¡Funcionó!', 'The engineer rigged a filter like Apollo 13. It worked!')
       else { crewHit('health', -12); note('bad', 'El CO₂ alto dejó a todos con dolor de cabeza.', 'High CO₂ left everyone with headaches.') }
     }
     if (event === 'medical') {
       const sick = m.crew[1 + Math.floor(r() * 3)]
-      if (option === 'treat' && working(m, 'medkit')) { sick.health = clamp(sick.health - 5); note('good', 'Tratamiento en la enfermería: el coágulo se controló.', 'Treated in the medical bay: the clot is under control.') }
+      if (option === 'treat' && working(m, 'medkit') && !(m0.effects && m0.effects.medicBusy)) { sick.health = clamp(sick.health - 5); note('good', 'Tratamiento en la enfermería: el coágulo se controló.', 'Treated in the medical bay: the clot is under control.') }
       else if (option === 'ground') { sciFactor *= 0.4; sick.health = clamp(sick.health - 10); note('good', 'Los médicos en Tierra guiaron el tratamiento. Se perdió tiempo de ciencia.', 'Doctors on Earth guided the treatment. Science time was lost.') }
       else { sick.health = clamp(sick.health - 35); note('bad', 'El coágulo empeoró. El tripulante necesita reposo absoluto.', 'The clot got worse. The crew member needs full bed rest.') }
     }
@@ -231,6 +251,50 @@ export function nextDay(m0, dest, commanderId, plan, choice) {
       if (option === 'train') { sciFactor *= 0.5; m.drilled = true; note('good', 'Simulacro completado: la tripulación responde mejor a emergencias.', 'Drill complete: the crew handles emergencies better.') }
       else note('warn', 'Se pospuso el simulacro.', 'The drill was postponed.')
     }
+    const role = (duty) => m.crew && (m.crew.find((c) => c.duty === duty) || m.crew[0])
+    const captain = m.crew && m.crew.find((c) => c.commander)
+    if (event === 'routineClash') {
+      if (option === 'rules') note('good', 'Acordaron reglas de convivencia: menos roces.', 'They agreed on house rules: less friction.')
+      else { crewHit('morale', -5); note('warn', 'Los roces siguen: −5% de ánimo.', 'The friction goes on: −5% morale.') }
+    }
+    if (event === 'pilotEngineer') {
+      if (option === 'protocol') note('good', 'Nuevo protocolo: cada maniobra se anuncia antes.', 'New protocol: every maneuver is called out first.')
+      else { powerPenalty = 0.85; note('warn', 'Se gastó energía de más este turno.', 'Extra power was used this turn.') }
+    }
+    if (event === 'scienceVsSafety') {
+      if (option === 'science') { sciFactor *= 1.35; captain.morale = clamp(captain.morale - 15); note('good', 'Más datos de la zona inestable; el capitán queda tenso.', 'More data from the unstable zone; the captain is tense.') }
+      else { sciFactor = 0; note('good', 'Sensores apagados por seguridad.', 'Sensors off for safety.') }
+    }
+    if (event === 'enginesHot') {
+      if (option === 'engineer') { role('pilot').morale = clamp(role('pilot').morale - 10); note('good', 'Motores protegidos. El piloto acepta a regañadientes.', 'Engines protected. The pilot grudgingly agrees.') }
+      else { m.effects.frustrated = 2; note('warn', 'La ingeniera, frustrada, rendirá menos en reparaciones.', 'The frustrated engineer will do worse at repairs.') }
+    }
+    if (event === 'fatigueIgnored') {
+      if (option === 'rest') { sciFactor = 0; crewHit('energy', 35); note('good', 'Descanso obligatorio: todos durmieron.', 'Mandatory rest: everyone slept.') }
+      else { crewHit('health', -8); m.effects.errorRisk = 0.25; note('bad', 'Siguieron sin dormir: sube el riesgo de error humano.', 'They kept going without sleep: human error risk is up.') }
+    }
+    if (event === 'thirdQuarter') {
+      m.thirdSeen = true
+      if (option === 'call') { sciFactor *= 0.5; crewHit('morale', 15); note('good', 'Llamada con casa y una tarde libre: vuelve la energía.', 'A call home and a free afternoon: the spark is back.') }
+      else { m.effects.apathy = true; note('warn', 'Apatía general: −20% de rendimiento hasta tomar un respiro.', 'General apathy: −20% performance until they get a break.') }
+    }
+    if (event === 'disobedience') {
+      if (option === 'order') { sciFactor *= 0.7; note('good', 'Volvió al refugio. Se perdió el experimento, pero nadie se dañó.', 'She returned to shelter. The experiment was lost, but nobody got hurt.') }
+      else { m.science += 15; const sp = role('scientist'); sp.health = clamp(sp.health - 25); doseToday += 3; m.effects.medicBusy = 2; note('bad', 'Terminó el experimento (+15 ciencia), pero recibió radiación y el médico la atiende.', 'She finished the experiment (+15 science), but took radiation and the doctor is treating her.') }
+    }
+    if (event === 'deadlock') {
+      if (option === 'safe') { sciFactor = 0; note('good', 'Tomaste el mando: modo seguro y la nave a salvo.', 'You took command: safe mode and the craft is secure.') }
+      else { sciFactor = 0; m.electronics = clamp(m.electronics - 12); crewHit('morale', -10); note('bad', 'Se perdió el turno discutiendo y la nave quedó expuesta.', 'The turn was lost to arguing and the craft was left exposed.') }
+    }
+    if (event === 'authority') {
+      if (option === 'mediate') { sciFactor *= 0.4; crewHit('morale', 8); note('good', 'Mediaste: la cadena de mando se restableció.', 'You mediated: the chain of command is restored.') }
+      else if (option === 'doctor') { m.effects.halfDays = 2; crewHit('energy', 20); note('good', 'El médico tenía razón: dos días a medio ritmo para recuperarse.', 'The doctor was right: two half-pace days to recover.') }
+      else { m.effects.divided = true; crewHit('morale', -12); note('bad', 'Seguiste, pero la tripulación quedó dividida.', 'You carried on, but the crew is divided.') }
+    }
+    if (event === 'panic') {
+      if (option === 'safe') { sciFactor = 0; crewHit('energy', 30); crewHit('morale', 10); m.effects.panic = 0; note('good', 'Todo se detuvo, descansaron y se recuperó la calma.', 'Everything stopped, they rested and calm returned.') }
+      else { m.effects.panic = 2; note('bad', 'El pánico sigue: dos días de castigo en todo.', 'The panic continues: two days of penalties across the board.') }
+    }
     if (event === 'opportunity') {
       if (option === 'study') {
         const has = dest.goals.some((g) => working(m, g))
@@ -239,6 +303,24 @@ export function nextDay(m0, dest, commanderId, plan, choice) {
       }
     }
   }
+
+  // 1b. Ongoing social effects
+  const fx = m.effects = { ...(m0.effects || {}) }
+  if (fx.apathy) { sciFactor *= 0.8; if (plan === 'rest') { fx.apathy = false; note('good', 'El descanso cortó la apatía.', 'The rest broke the apathy.') } }
+  if (fx.panic > 0) {
+    if (plan === 'rest') { fx.panic = 0; note('good', 'El modo seguro y el descanso terminaron con el pánico.', 'Safe mode and rest ended the panic.') }
+    else { fx.panic -= 1; sciFactor *= 0.5; crewHit('health', -8); crewHit('energy', -12); note('bad', 'Pánico a bordo: todo rinde a la mitad.', 'Panic on board: everything runs at half.') }
+  }
+  if (fx.halfDays > 0) { fx.halfDays -= 1; sciFactor *= 0.5 }
+  if (fx.divided) { sciFactor *= 0.9; if (choice && choice.event === 'conflict' && choice.option === 'talk') fx.divided = false }
+  if (fx.frustrated > 0) fx.frustrated -= 1
+  if (fx.medicBusy > 0) fx.medicBusy -= 1
+  if (fx.errorRisk > 0 && plan !== 'rest' && r() < fx.errorRisk) {
+    const p = breakPart((x) => x.cat === 'instruments' || x.cat === 'power')
+    note('bad', `Error humano por cansancio${p ? `: se dañó ${p.name.es.toLowerCase()}` : ''}.`, `Human error from fatigue${p ? `: the ${p.name.en.toLowerCase()} was damaged` : ''}.`)
+  }
+  if (plan === 'rest') fx.errorRisk = 0
+  m.lastStorm = !!choice && (choice.event === 'solarStorm' || choice.event === 'radiationBelt')
 
   // 2. Hidden defects from skipped tests
   m.defects.filter((d) => d.day === day).forEach((d) => {
@@ -250,7 +332,7 @@ export function nextDay(m0, dest, commanderId, plan, choice) {
 
   // 3. Science and data: instruments that still work, power, electronics and crew shape
   const s = summarize(dest, m.parts, null, [])
-  const power = s.use > 0 ? Math.min(1, s.generation / s.use) : 1
+  const power = (s.use > 0 ? Math.min(1, s.generation / s.use) : 1) * powerPenalty
   if (power < 1) note('warn', `Energía al ${Math.round(power * 100)} %.`, `Power at ${Math.round(power * 100)}%.`)
   const crewShape = m.crew ? m.crew.reduce((a, c) => a + (0.5 + 0.25 * c.energy / 100 + 0.25 * c.morale / 100) * (c.health / 100), 0) / m.crew.length : 1
   const raw = s.science * 2.2 * sciFactor * power * (m.electronics / 100) * crewShape * st.science * m.gyroPenalty
@@ -291,7 +373,7 @@ export function giveOrder(m0, crewId, order) {
   const m = { ...m0, crew: m0.crew.map((c) => ({ ...c })) }
   const c = m.crew.find((x) => x.id === crewId)
   if (order === 'rest') c.energy = clamp(c.energy + 35)
-  if (order === 'medical') c.health = clamp(c.health + 15)
+  if (order === 'medical' && !(m0.effects && m0.effects.medicBusy)) c.health = clamp(c.health + 15)
   if (order === 'exercise') { c.health = clamp(c.health + 8); c.energy = clamp(c.energy - 10) }
   if (order === 'talk') c.morale = clamp(c.morale + 12)
   m.orderDay = m.day
