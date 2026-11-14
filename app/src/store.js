@@ -35,26 +35,29 @@ export const useGame = create((set, get) => ({
     const s = get()
     const dest = destinationById[s.destinationId]
     const mission = startMission(dest, s.selection, s.launcherId, s.tests, s.commanderId, Math.floor(Math.random() * 1e9))
-    set({ mission, plan: 'science', event: null, screen: 'mission' })
+    // 60 Parsecs-style loop: each morning the logbook opens with today's problem already waiting
+    set({ mission, plan: 'science', event: rollEvent(mission, dest, s.commanderId), pick: null, orderPick: null, journalOpen: true, screen: 'mission' })
   },
+  journalOpen: false,
+  pick: null, // { option, risk } chosen for today's event
+  orderPick: null, // { crewId, order } chosen for today
+  openJournal: () => set({ journalOpen: true }),
+  closeJournal: () => set({ journalOpen: false }),
   setPlan: (plan) => set({ plan }),
-  // Advancing a day may raise an event; the day resolves after the player answers
-  advance: () => {
+  pickOption: (option, risk) => set({ pick: { option, risk } }),
+  pickOrder: (crewId, order) => set((s) => ({ orderPick: s.orderPick && s.orderPick.crewId === crewId && s.orderPick.order === order ? null : { crewId, order } })),
+  // Live the day with everything decided in the logbook, then open the next page
+  startDay: () => {
     const s = get()
-    if (!s.mission || s.mission.over || s.event) return
+    if (!s.mission || s.mission.over || (s.event && !s.pick)) return
     const dest = destinationById[s.destinationId]
-    const ev = rollEvent(s.mission, dest, s.commanderId)
-    if (ev) set({ event: ev })
-    else get().resolve(null)
+    let m = s.mission
+    if (s.orderPick) m = giveOrder(m, s.orderPick.crewId, s.orderPick.order)
+    const choice = s.event ? { event: s.event, option: s.pick.option, risk: s.pick.risk } : null
+    m = nextDay(m, dest, s.commanderId, s.plan, choice)
+    if (m.over) return set({ mission: m, event: null, pick: null, orderPick: null, journalOpen: false, screen: 'legacy' })
+    set({ mission: m, event: rollEvent(m, dest, s.commanderId), pick: null, orderPick: null, journalOpen: true })
   },
-  answer: (option, risk) => get().resolve({ event: get().event, option, risk }),
-  resolve: (choice) => {
-    const s = get()
-    const dest = destinationById[s.destinationId]
-    const mission = nextDay(s.mission, dest, s.commanderId, s.plan, choice)
-    set({ mission, event: null, screen: mission.over ? 'legacy' : 'mission' })
-  },
-  order: (crewId, order) => set((s) => ({ mission: giveOrder(s.mission, crewId, order) })),
 
-  restart: () => set({ screen: 'home', destinationId: null, commanderId: null, selection: {}, launcherId: null, tests: [], mission: null, event: null }),
+  restart: () => set({ screen: 'home', destinationId: null, commanderId: null, selection: {}, launcherId: null, tests: [], mission: null, event: null, pick: null, orderPick: null, journalOpen: false }),
 }))

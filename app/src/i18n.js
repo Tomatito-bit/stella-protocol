@@ -64,6 +64,11 @@ const STRINGS = {
     profile_cautious: 'Cauteloso', profile_cautious_info: 'Proteges a la nave y a la gente primero: la base de la cultura de seguridad de la NASA.',
     profile_balanced: 'Equilibrado', profile_balanced_info: 'Arriesgas cuando vale la pena y te cuidas cuando no.',
     epilogue: 'Epílogo de la tripulación', again: 'Diseñar otra misión',
+    openLogbook: 'Abrir bitácora', pendingDecision: 'Hay un problema esperando tu decisión', readyForDay: 'Listo para el día {n}',
+    probeStatus: 'Estado de la sonda', probeStatusInfo: 'Es una misión robótica: tu equipo la opera desde la Tierra. Revisa la electrónica y la dosis arriba.',
+    today: 'Hoy', noEvent: 'Sin novedades esta mañana. Buen día para trabajar.', crewOrder: 'Orden a la tripulación (opcional)',
+    lookAround: 'Ver la nave', liveDay: 'Vivir el día', chooseFirst: 'Decide el problema de hoy',
+    mood_sick: 'enfermo, necesita atención', mood_tired: 'agotado', mood_down: 'desanimado', mood_great: 'en excelente forma', mood_ok: 'bien',
     lang: 'English',
   },
   en: {
@@ -128,6 +133,11 @@ const STRINGS = {
     profile_cautious: 'Cautious', profile_cautious_info: 'You protect the craft and the people first: the core of NASA’s safety culture.',
     profile_balanced: 'Balanced', profile_balanced_info: 'You take risks when they’re worth it and play safe when they’re not.',
     epilogue: 'Crew epilogue', again: 'Design another mission',
+    openLogbook: 'Open logbook', pendingDecision: 'A problem is waiting for your decision', readyForDay: 'Ready for day {n}',
+    probeStatus: 'Probe status', probeStatusInfo: 'This is a robotic mission: your team flies it from Earth. Watch electronics and dose above.',
+    today: 'Today', noEvent: 'Nothing new this morning. A good day to work.', crewOrder: 'Crew order (optional)',
+    lookAround: 'Look at the spacecraft', liveDay: 'Live the day', chooseFirst: 'Decide today’s problem',
+    mood_sick: 'sick, needs care', mood_tired: 'exhausted', mood_down: 'feeling down', mood_great: 'in great shape', mood_ok: 'fine',
     lang: 'Español',
   },
 }

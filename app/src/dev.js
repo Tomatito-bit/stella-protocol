@@ -20,7 +20,7 @@ export function loadDemo() {
     let m = startMission(d, base.selection, base.launcherId, base.tests, 'valeria', 4242)
     const days = screen === 'legacy' ? m.totalDays : 3
     for (let i = 0; i < days && !m.over; i++) m = nextDay(m, d, 'valeria', 'science', null)
-    useGame.setState({ ...base, screen, mission: m, event: q.get('event') })
+    useGame.setState({ ...base, screen, mission: m, event: q.get('event'), journalOpen: q.has('logbook') })
     return
   }
   useGame.setState({ screen, destinationId: dest, commanderId: 'valeria', selection: q.has('empty') ? {} : SAMPLE[dest], launcherId: dest === 'europa' ? 'heavy' : 'superheavy', tests: ['vacuum', 'vibration'] })

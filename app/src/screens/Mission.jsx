@@ -11,16 +11,11 @@ const PLANS = ['science', 'transmit', 'rest']
 const ORDERS = ['rest', 'medical', 'exercise', 'talk']
 
 export default function Mission() {
-  const { t, L, lang } = useT()
-  const { mission: m, plan, event, setPlan, advance, answer, order } = useGame()
+  const { t, L } = useT()
+  const { mission: m, plan, event, journalOpen, openJournal } = useGame()
   const dest = destinationById[useGame((s) => s.destinationId)]
-  const [journalOpen, setJournalOpen] = useState(false)
-  const [picked, setPicked] = useState(null)
-  const ev = event && EVENTS[event]
   const storm = event === 'solarStorm' || event === 'radiationBelt'
   const pct = Math.min(100, Math.round((m.science / m.goal) * 100))
-  const last = m.journal[m.journal.length - 1]
-  const canAct = (o) => (o.needs === 'fuel' ? m.spareTanks > 0 : o.needs === 'spares' ? m.spares > 0 : o.needs === 'medkit' ? (m.parts.medkit || 0) > 0 : true) && (!o.crewedOnly || !!m.crew)
 
   return (
     <section className="mission">
@@ -35,93 +30,73 @@ export default function Mission() {
             <span className="hud-label">{t('science')} {Math.round(m.science)} / {m.goal}</span>
             <div className="bar"><div style={{ width: `${pct}%` }} /></div>
           </div>
-          <div className="hud-box"><span className="hud-label">{t('dose')}</span><b>{m.dose.toFixed(1)} mSv</b></div>
-          <div className="hud-box"><span className="hud-label">{t('electronics')}</span><b className={m.electronics < 50 ? 'bad' : ''}>{Math.round(m.electronics)}%</b></div>
-          <div className="hud-box"><span className="hud-label">{t('fuel')}</span><b>{m.spareTanks}</b></div>
-          <div className="hud-box"><span className="hud-label">{t('sparesShort')}</span><b>{m.spares}</b></div>
-          {m.crew && <div className="hud-box"><span className="hud-label">{t('supplies')}</span><b className={m.supplies < 3 ? 'bad' : ''}>{m.supplies} d</b></div>}
-          {dest.delayMin > 1 && <div className="hud-box"><span className="hud-label">{t('delay')}</span><b>{dest.delayMin} min</b></div>}
+          <Stat label={t('dose')} value={`${m.dose.toFixed(1)} mSv`} />
+          <Stat label={t('electronics')} value={`${Math.round(m.electronics)}%`} bad={m.electronics < 50} />
+          <Stat label={t('fuel')} value={m.spareTanks} />
+          <Stat label={t('sparesShort')} value={m.spares} />
+          {m.crew && <Stat label={t('supplies')} value={`${m.supplies} d`} bad={m.supplies < 3} />}
+          {dest.delayMin > 1 && <Stat label={t('delay')} value={`${dest.delayMin} min`} />}
         </div>
-        <button className="journal-note" onClick={() => setJournalOpen(true)}>
-          <span className="small">{t('journal')} · {t('day')} {last.day}</span>
-          <span>{L(last.entries[0]?.text) || (lang === 'es' ? 'Día tranquilo.' : 'A quiet day.')}</span>
-        </button>
+        {!journalOpen && (
+          <button className="open-logbook" onClick={openJournal}>
+            <b>{t('openLogbook')}</b>
+            <span>{event ? t('pendingDecision') : t('readyForDay', { n: m.day + 1 })}</span>
+          </button>
+        )}
       </div>
 
       <aside className="mission-panel">
-        <h3>{t('todaysPlan')}</h3>
-        <div className="plans">
-          {PLANS.map((p) => (
-            <button key={p} className={`choice ${plan === p ? 'on' : ''}`} onClick={() => setPlan(p)}>
-              <b>{t(`plan_${p}`)}</b>
-              <span className="small">{t(`plan_${p}_info`)}</span>
-            </button>
-          ))}
-        </div>
-
-        {m.crew && (
+        {m.crew ? (
           <>
             <h3>{t('crewHud')}</h3>
-            <p className="small">{m.orderDay === m.day ? t('orderGiven') : t('orderHint')}</p>
             <div className="crew-list">
-              {m.crew.map((c) => {
-                const info = crewById[c.id]
-                const bio = biometrics(c, m.day)
-                const open = picked === c.id
-                return (
-                  <div key={c.id} className={`crew-card ${open ? 'open' : ''}`} style={{ '--accent': info.color }}>
-                    <button className="crew-row" onClick={() => setPicked(open ? null : c.id)}>
-                      <span className="avatar sm">{info.name.split(' ').map((w) => w[0]).join('')}</span>
-                      <span className="crew-name"><b>{info.name.split(' ')[0]}{c.commander ? ' ★' : ''}</b><small>{L(info.role)}</small></span>
-                      <span className="bio">
-                        <span className={bio.heart > 95 ? 'bad' : ''}>♥ {bio.heart}</span>
-                        <span>{bio.pressure}</span>
-                      </span>
-                    </button>
-                    <div className="vitals">
-                      <Vital label={t('health')} v={c.health} />
-                      <Vital label={t('morale')} v={c.morale} />
-                      <Vital label={t('energy')} v={c.energy} />
-                      <Vital label={t('fluids')} v={bio.fluid} invert />
-                    </div>
-                    {open && (
-                      <div className="orders">
-                        {ORDERS.map((o) => (
-                          <button key={o} className="choice mini" disabled={m.orderDay === m.day} onClick={() => order(c.id, o)}>{t(`order_${o}`)}</button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
+              {m.crew.map((c) => <CrewCard key={c.id} c={c} day={m.day} />)}
             </div>
           </>
+        ) : (
+          <>
+            <h3>{t('probeStatus')}</h3>
+            <p className="small">{t('probeStatusInfo')}</p>
+          </>
         )}
-
-        <button className="btn big full" onClick={advance}>{m.day + 1 >= m.totalDays ? t('lastDay') : t('nextDay')} →</button>
+        <button className="btn big full" onClick={openJournal}>{t('openLogbook')}</button>
       </aside>
 
-      {ev && (
-        <div className="modal-bg">
-          <div className="modal event">
-            <span className="eyebrow">{L(ev.hazard)} · {t('day')} {m.day + 1}</span>
-            <h2>{L(ev.title)}</h2>
-            <p>{L(ev.text)}</p>
-            <div className="options">
-              {ev.options.filter((o) => !o.crewedOnly || m.crew).map((o) => (
-                <button key={o.id} className={`option risk-${o.risk}`} disabled={!canAct(o)} onClick={() => answer(o.id, o.risk)}>
-                  <span className="option-top"><b>{L(o.label)}</b><span className="risk-tag">{t(`risk_${o.risk}`)}</span></span>
-                  <span className="small">{canAct(o) ? L(o.detail) : t('cantDo')}</span>
-                </button>
-              ))}
-            </div>
-            <p className="small fact">{L(ev.fact)}</p>
-          </div>
-        </div>
-      )}
-
-      {journalOpen && <Journal journal={m.journal} onClose={() => setJournalOpen(false)} />}
+      {journalOpen && <Logbook />}
     </section>
+  )
+}
+
+function Stat({ label, value, bad }) {
+  return (
+    <div className="hud-box">
+      <span className="hud-label">{label}</span>
+      <b className={bad ? 'bad' : ''}>{value}</b>
+    </div>
+  )
+}
+
+function CrewCard({ c, day }) {
+  const { t, L } = useT()
+  const info = crewById[c.id]
+  const bio = biometrics(c, day)
+  return (
+    <div className="crew-card" style={{ '--accent': info.color }}>
+      <div className="crew-row">
+        <span className="avatar sm">{info.name.split(' ').map((w) => w[0]).join('')}</span>
+        <span className="crew-name"><b>{info.name.split(' ')[0]}{c.commander ? ' ★' : ''}</b><small>{L(info.role)}</small></span>
+        <span className="bio">
+          <span className={bio.heart > 95 ? 'bad' : ''}>♥ {bio.heart}</span>
+          <span>{bio.pressure}</span>
+        </span>
+      </div>
+      <div className="vitals">
+        <Vital label={t('health')} v={c.health} />
+        <Vital label={t('morale')} v={c.morale} />
+        <Vital label={t('energy')} v={c.energy} />
+        <Vital label={t('fluids')} v={bio.fluid} invert />
+      </div>
+    </div>
   )
 }
 
@@ -135,23 +110,111 @@ function Vital({ label, v, invert }) {
   )
 }
 
-// Paper logbook: one page per day
-function Journal({ journal, onClose }) {
+// How a crew member "reads" in the logbook, in words instead of numbers (60 Parsecs style)
+function mood(c, t) {
+  if (c.health < 40) return t('mood_sick')
+  if (c.energy < 30) return t('mood_tired')
+  if (c.morale < 35) return t('mood_down')
+  if (c.health > 85 && c.energy > 70 && c.morale > 70) return t('mood_great')
+  return t('mood_ok')
+}
+
+// The logbook: left page = what happened, right page = today's decisions
+function Logbook() {
   const { t, L } = useT()
-  const [i, setI] = useState(journal.length - 1)
-  const p = journal[i]
+  const { mission: m, event, pick, orderPick, plan, setPlan, pickOption, pickOrder, startDay, closeJournal } = useGame()
+  const [back, setBack] = useState(0) // pages back in history
+  const page = m.journal[m.journal.length - 1 - back]
+  const ev = event && EVENTS[event]
+  const canAct = (o) => (o.needs === 'fuel' ? m.spareTanks > 0 : o.needs === 'spares' ? m.spares > 0 : o.needs === 'medkit' ? (m.parts.medkit || 0) > 0 : true) && (!o.crewedOnly || !!m.crew)
+  const ready = !ev || !!pick
+
   return (
-    <div className="modal-bg" onClick={onClose}>
-      <div className="notebook" onClick={(e) => e.stopPropagation()}>
-        <h3>{p.day === 0 ? t('arrival') : `${t('day')} ${p.day}`}</h3>
-        {p.plan && <p className="plan-line">{t('todaysPlan')}: {t(`plan_${p.plan}`).toLowerCase()}</p>}
-        <ul>{p.entries.map((e, k) => <li key={k} className={e.type}>{L(e.text)}</li>)}</ul>
-        {!p.entries.length && <p>{t('quietDay')}</p>}
-        {p.science > 0 && <p className="stamp">+{p.science} {t('science').toLowerCase()}</p>}
-        <div className="notebook-foot">
-          <button onClick={() => setI(i - 1)} disabled={i === 0}>← {t('before')}</button>
-          <span>{i + 1} / {journal.length}</span>
-          {i < journal.length - 1 ? <button onClick={() => setI(i + 1)}>{t('after')} →</button> : <button onClick={onClose}>{t('close')}</button>}
+    <div className="modal-bg logbook-bg">
+      <div className="logbook">
+        <div className="rings" aria-hidden />
+        {/* Left page: the report */}
+        <div className="page left">
+          <div className="page-head">
+            <span className="tiny">{t('journal')}</span>
+            <h2>{page.day === 0 ? t('arrival') : `${t('day')} ${page.day}`}</h2>
+            {page.plan && <p className="hand muted">{t('todaysPlan')}: {t(`plan_${page.plan}`).toLowerCase()}</p>}
+          </div>
+          <ul className="hand entries">
+            {page.entries.length ? page.entries.map((e, k) => <li key={k} className={e.type}>{L(e.text)}</li>) : <li>{t('quietDay')}</li>}
+          </ul>
+          {page.science > 0 && <p className="stamp">+{page.science} {t('science').toLowerCase()}</p>}
+          {back === 0 && m.crew && (
+            <div className="hand crew-lines">
+              {m.crew.map((c) => <p key={c.id}><b>{crewById[c.id].name.split(' ')[0]}</b>: {mood(c, t)}</p>)}
+            </div>
+          )}
+          {back === 0 && (
+            <p className="hand muted resources">
+              {m.crew ? `${t('supplies')}: ${m.supplies} d · ` : ''}{t('sparesShort')}: {m.spares} · {t('fuel')}: {m.spareTanks} · {t('electronics')}: {Math.round(m.electronics)}%
+            </p>
+          )}
+          <div className="page-nav">
+            <button onClick={() => setBack(back + 1)} disabled={back >= m.journal.length - 1}>← {t('before')}</button>
+            {back > 0 && <button onClick={() => setBack(back - 1)}>{t('after')} →</button>}
+          </div>
+        </div>
+
+        {/* Right page: today's decisions */}
+        <div className="page right">
+          <span className="tiny">{t('today')} · {t('day')} {m.day + 1}</span>
+          {ev ? (
+            <div className="today-event">
+              <h3>{L(ev.title)}</h3>
+              <p className="hand">{L(ev.text)}</p>
+              <div className="hand-options">
+                {ev.options.filter((o) => !o.crewedOnly || m.crew).map((o) => {
+                  const ok = canAct(o)
+                  const on = pick && pick.option === o.id
+                  return (
+                    <button key={o.id} className={`hand-option ${on ? 'on' : ''} risk-${o.risk}`} disabled={!ok} onClick={() => pickOption(o.id, o.risk)}>
+                      <span className="box">{on ? '✓' : ''}</span>
+                      <span>
+                        <b>{L(o.label)}</b> <em className="risk-word">({t(`risk_${o.risk}`).toLowerCase()})</em>
+                        <small>{ok ? L(o.detail) : t('cantDo')}</small>
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+              <p className="fact-note">{L(ev.fact)}</p>
+            </div>
+          ) : (
+            <p className="hand calm">{t('noEvent')}</p>
+          )}
+
+          <h4>{t('todaysPlan')}</h4>
+          <div className="hand-row">
+            {PLANS.map((p) => (
+              <button key={p} className={`chip-hand ${plan === p ? 'on' : ''}`} onClick={() => setPlan(p)}>{t(`plan_${p}`)}</button>
+            ))}
+          </div>
+
+          {m.crew && (
+            <>
+              <h4>{t('crewOrder')}</h4>
+              <div className="order-grid">
+                {m.crew.map((c) => (
+                  <div key={c.id} className="order-line">
+                    <b style={{ color: crewById[c.id].color }}>{crewById[c.id].name.split(' ')[0]}</b>
+                    {ORDERS.map((o) => (
+                      <button key={o} className={`chip-hand small ${orderPick && orderPick.crewId === c.id && orderPick.order === o ? 'on' : ''}`} onClick={() => pickOrder(c.id, o)}>{t(`order_${o}`)}</button>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          <div className="logbook-actions">
+            <button className="link dark" onClick={closeJournal}>{t('lookAround')}</button>
+            <button className="btn" disabled={!ready} onClick={startDay}>{ready ? (m.day + 1 >= m.totalDays ? t('lastDay') : t('liveDay')) : t('chooseFirst')} →</button>
+          </div>
         </div>
       </div>
     </div>
