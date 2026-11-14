@@ -78,6 +78,7 @@ const STRINGS = {
     step_ignition: 'Ignición', step_liftoff: 'Despegue', step_maxq: 'Max-Q', step_meco: 'Separación', step_fairing: 'Cofia', step_transfer: 'Crucero', step_insertion: 'Órbita',
     missionOf: 'Misión {n} de {total}', chooseThis: 'Elegir esta misión', recommended: 'Usar nave recomendada', clear: 'Vaciar',
     viewShip: 'Nave', viewCrew: 'Tripulación por dentro',
+    rate_safety: 'Seguridad', rate_science: 'Ciencia', rate_speed: 'Rapidez', rate_morale: 'Ánimo del equipo', withYou: 'Viajan contigo', chooseCmd: 'Elegir comandante',
     lang: 'English',
   },
   en: {
@@ -156,6 +157,7 @@ const STRINGS = {
     step_ignition: 'Ignition', step_liftoff: 'Liftoff', step_maxq: 'Max-Q', step_meco: 'Separation', step_fairing: 'Fairing', step_transfer: 'Cruise', step_insertion: 'Orbit',
     missionOf: 'Mission {n} of {total}', chooseThis: 'Choose this mission', recommended: 'Use recommended spacecraft', clear: 'Clear',
     viewShip: 'Spacecraft', viewCrew: 'Crew inside',
+    rate_safety: 'Safety', rate_science: 'Science', rate_speed: 'Speed', rate_morale: 'Crew morale', withYou: 'Flying with you', chooseCmd: 'Choose commander',
     lang: 'Español',
   },
 }

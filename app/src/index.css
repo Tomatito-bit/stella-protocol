@@ -493,3 +493,18 @@ h2 { font-size: 26px; }
   .cover-hint { display: none; }
 }
 .closed-logbook { bottom: 44px; } .cover-hint { top: auto; bottom: -30px; }
+
+/* ---------- Commander select (game style) ---------- */
+.crew-figure { inset: 0 0 80px 42%; }
+.role-line { display: flex; align-items: center; gap: 10px; color: var(--muted); margin: -4px 0 6px; }
+.style-chip { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; color: #050814; background: var(--accent); font-weight: 700; }
+.quote-big { font-style: italic; }
+.ratings { display: grid; gap: 8px; margin: 16px 0 14px; max-width: 420px; }
+.rating { display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: var(--muted); }
+.pips { display: flex; gap: 5px; }
+.pips i { width: 26px; height: 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.1); }
+.pips i.on { background: var(--accent); box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 60%, transparent); }
+.crew-aboard { margin-top: 8px; }
+.thumb-dot.initials { display: grid; place-items: center; font-size: 12px; font-weight: 700; color: #fff; background: color-mix(in srgb, var(--accent) 35%, #0b1124); border: 2px solid var(--accent); }
+@media (max-width: 900px) { .crew-figure { inset: auto; height: 40dvh; } }
+.ratings { max-width: 360px; }

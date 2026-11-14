@@ -5,6 +5,7 @@ import * as THREE from 'three'
 import { crewById } from '../data/crew'
 import { crewPlaces, SPOT_ROOM } from '../logic/crewPlaces'
 import { useT } from '../i18n'
+import { dressAstronaut } from './dressAstronaut'
 
 // Top-down deck of the spacecraft (modeled in Blender: assets/modelos/stella_protocol.blend).
 // Rooms, doors and spots are named nodes, so astronauts walk door → corridor → door between rooms.
@@ -64,19 +65,7 @@ function route(nodes, fromSpot, toSpot, offset) {
 function Astronaut({ place, nodes }) {
   const { scene } = useGLTF('/models/astronaut.glb')
   const info = crewById[place.id]
-  const model = useMemo(() => {
-    const m = scene.clone(true)
-    m.traverse((o) => {
-      if (o.isMesh && o.material && o.material.name === 'Accent') {
-        const mat = o.material.clone()
-        mat.color.set(info.color)
-        mat.emissive = new THREE.Color(info.color)
-        mat.emissiveIntensity = 0.35
-        o.material = mat
-      }
-    })
-    return m
-  }, [scene, info.color])
+  const model = useMemo(() => dressAstronaut(scene, info), [scene, info])
   const root = useRef()
   const joints = useRef(null)
   const path = useRef([])
