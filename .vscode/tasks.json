@@ -1,0 +1,13 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run the game",
+      "type": "npm",
+      "script": "dev",
+      "path": "app",
+      "isBackground": true,
+      "problemMatcher": { "pattern": { "regexp": "^$" }, "background": { "activesBegin": ".", "beginsPattern": "VITE", "endsPattern": "Local:" } }
+    }
+  ]
+}

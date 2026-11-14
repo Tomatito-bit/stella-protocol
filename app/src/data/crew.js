@@ -1,0 +1,55 @@
+// Four original characters. The chosen one commands; the other three fly as crew.
+// style changes risk appetite and the advice they give during the mission.
+export const CREW = [
+  {
+    id: 'valeria',
+    name: 'Valeria Cruz',
+    role: { es: 'Ingeniera de vuelo', en: 'Flight engineer' },
+    duty: 'engineer',
+    style: 'cautious',
+    color: '#38bdf8',
+    styleName: { es: 'Cautelosa', en: 'Cautious' },
+    quote: { es: 'Primero la nave y la gente; la ciencia puede esperar un día.', en: 'Ship and people first; science can wait a day.' },
+    perk: { es: 'Los eventos peligrosos llegan menos seguido.', en: 'Dangerous events happen less often.' },
+    drawback: { es: 'Se hace un poco menos de ciencia.', en: 'A bit less science gets done.' },
+  },
+  {
+    id: 'diego',
+    name: 'Diego Ortega',
+    role: { es: 'Piloto', en: 'Pilot' },
+    duty: 'pilot',
+    style: 'bold',
+    color: '#fb923c',
+    styleName: { es: 'Audaz', en: 'Bold' },
+    quote: { es: 'Si no arriesgamos, nunca sabremos qué hay allá.', en: 'If we never take risks, we’ll never know what’s out there.' },
+    perk: { es: 'Ruta rápida: más días de operación.', en: 'Fast route: more operating days.' },
+    drawback: { es: 'El paso cercano a un planeta puede dañar una pieza.', en: 'The close flyby can damage a part.' },
+  },
+  {
+    id: 'mei',
+    name: 'Mei Lin',
+    role: { es: 'Científica de misión', en: 'Mission scientist' },
+    duty: 'scientist',
+    style: 'science',
+    color: '#c084fc',
+    styleName: { es: 'Científica', en: 'Scientist' },
+    quote: { es: 'Cada dato que traigamos se va a usar durante décadas.', en: 'Every bit of data we bring back will be used for decades.' },
+    perk: { es: 'Más oportunidades científicas.', en: 'More science opportunities.' },
+    drawback: { es: 'La tripulación se cansa más rápido.', en: 'The crew tires faster.' },
+    hidden: { es: 'Claustrofóbica', en: 'Claustrophobic' },
+  },
+  {
+    id: 'kwame',
+    name: 'Kwame Mensah',
+    role: { es: 'Médico de vuelo', en: 'Flight surgeon' },
+    duty: 'doctor',
+    style: 'diplomat',
+    color: '#4ade80',
+    styleName: { es: 'Diplomático', en: 'Diplomat' },
+    quote: { es: 'Un equipo unido resuelve cualquier problema.', en: 'A united team can solve any problem.' },
+    perk: { es: 'El ánimo baja mucho más lento y casi no hay peleas.', en: 'Morale drops much slower and fights are rare.' },
+    drawback: { es: 'Es más lento en emergencias sin ayuda de la Tierra.', en: 'Slower in emergencies without help from Earth.' },
+  },
+]
+
+export const crewById = Object.fromEntries(CREW.map((c) => [c.id, c]))
