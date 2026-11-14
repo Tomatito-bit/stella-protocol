@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { DEFAULT_LANG } from './config'
-import { partById } from './data/parts'
+import { partById, RECOMMENDED } from './data/parts'
 import { destinationById } from './data/destinations'
 import { startMission, rollEvent, nextDay, giveOrder } from './logic/mission'
 
@@ -28,6 +28,9 @@ export const useGame = create((set, get) => ({
       return { selection: { ...s.selection, [id]: n } }
     }),
   chooseLauncher: (launcherId) => set({ launcherId }),
+  // One click: a proven spacecraft, rocket and all three environmental tests
+  useRecommended: () => set((s) => ({ selection: { ...RECOMMENDED[s.destinationId].parts }, launcherId: RECOMMENDED[s.destinationId].launcher, tests: ['vacuum', 'vibration', 'deployment'] })),
+  clearDesign: () => set({ selection: {}, launcherId: null, tests: [] }),
   toggleTest: (id) => set((s) => ({ tests: s.tests.includes(id) ? s.tests.filter((t) => t !== id) : [...s.tests, id] })),
 
   // Mission

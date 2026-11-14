@@ -90,3 +90,10 @@ export const TESTS = [
 ]
 
 export const partById = Object.fromEntries(PARTS.map((p) => [p.id, p]))
+
+// Ready-made spacecraft for players who don't want to build one (each passes the GO / NO-GO review)
+export const RECOMMENDED = {
+  moon: { parts: { solar: 3, battery: 1, engine: 2, tank: 3, hga: 1, lga: 1, camera: 1, spectrometer: 1, drill: 1, eclss: 2, shielding: 1, supplies: 2, medkit: 1, spares: 1 }, launcher: 'superheavy' },
+  mars: { parts: { solar: 4, battery: 2, engine: 2, tank: 4, hga: 1, lga: 1, camera: 1, spectrometer: 1, radar: 1, eclss: 2, shielding: 1, supplies: 3, medkit: 1, spares: 1 }, launcher: 'superheavy' },
+  europa: { parts: { solarxl: 2, rtg: 1, battery: 1, engine: 1, tank: 3, hga: 1, lga: 1, camera: 1, radar: 1, magnetometer: 1, shielding: 3, spares: 1 }, launcher: 'heavy' },
+}

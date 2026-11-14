@@ -7,7 +7,7 @@ import { Ship3D } from '../components/Ship3D'
 
 export default function Design() {
   const { t, L } = useT()
-  const { selection, launcherId, tests, changePart, chooseLauncher, toggleTest, go } = useGame()
+  const { selection, launcherId, tests, changePart, chooseLauncher, toggleTest, go, useRecommended, clearDesign } = useGame()
   const dest = destinationById[useGame((s) => s.destinationId)]
   const s = summarize(dest, selection, launcherId, tests)
   const spf = singlePointFailures(dest, selection)
@@ -17,7 +17,13 @@ export default function Design() {
     <section className="design">
       <div className="catalog">
         <button className="link" onClick={() => go('crew')}>← {t('back')}</button>
-        <h2>{t('design')}</h2>
+        <div className="design-head">
+          <h2>{t('design')}</h2>
+          <div className="design-quick">
+            <button className="btn" onClick={useRecommended}>{t('recommended')}</button>
+            <button className="btn ghost" onClick={clearDesign}>{t('clear')}</button>
+          </div>
+        </div>
         <p className="hint">{t('designHint')}</p>
         <div className="ship3d">
           <Ship3D sel={selection} crewed={dest.crewed} shield={s.shield} />

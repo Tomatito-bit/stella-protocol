@@ -76,6 +76,7 @@ const STRINGS = {
     ph_fairing: 'Se abre la cofia: ahí va tu nave.', ph_transfer: 'Rumbo a {dest}. Crucero interplanetario.',
     ph_insertion: 'Encendido de frenado: inserción en órbita.',
     step_ignition: 'Ignición', step_liftoff: 'Despegue', step_maxq: 'Max-Q', step_meco: 'Separación', step_fairing: 'Cofia', step_transfer: 'Crucero', step_insertion: 'Órbita',
+    missionOf: 'Misión {n} de {total}', chooseThis: 'Elegir esta misión', recommended: 'Usar nave recomendada', clear: 'Vaciar',
     lang: 'English',
   },
   en: {
@@ -152,6 +153,7 @@ const STRINGS = {
     ph_fairing: 'Fairing open: there goes your spacecraft.', ph_transfer: 'Heading to {dest}. Interplanetary cruise.',
     ph_insertion: 'Braking burn: orbit insertion.',
     step_ignition: 'Ignition', step_liftoff: 'Liftoff', step_maxq: 'Max-Q', step_meco: 'Separation', step_fairing: 'Fairing', step_transfer: 'Cruise', step_insertion: 'Orbit',
+    missionOf: 'Mission {n} of {total}', chooseThis: 'Choose this mission', recommended: 'Use recommended spacecraft', clear: 'Clear',
     lang: 'Español',
   },
 }
