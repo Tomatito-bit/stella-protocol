@@ -765,3 +765,4 @@ h2 { font-size: 26px; }
 .sticky b { display: block; text-align: right; color: var(--accent); margin-top: 4px; }
 .today-event { position: relative; }
 .event-doodle { float: right; width: 74px; height: 74px; margin: 0 0 6px 10px; transform: rotate(4deg); }
+.header-tools { margin-left: auto; }

@@ -54,7 +54,7 @@ function WindowFrame() {
 
 // Home screen: looking out of the Astraea's observation window at a living 3D Earth
 export default function Home() {
-  const { t, lang } = useT()
+  const { t } = useT()
   const go = useGame((s) => s.go)
   return (
     <section className="home home-deck">
@@ -66,12 +66,6 @@ export default function Home() {
         <p className="lead">{t('tagline')}</p>
         <div className="home-row">
           <button className="btn big glow" onClick={() => go('destination')}>{t('start')}</button>
-          <ul className="home-chips">
-            <li>{lang === 'es' ? 'Diseña tu nave' : 'Build your spacecraft'}</li>
-            <li>GO / NO-GO</li>
-            <li>{lang === 'es' ? 'Día con día' : 'Day by day'}</li>
-            <li>{lang === 'es' ? 'Riesgos reales de la NASA' : 'Real NASA risks'}</li>
-          </ul>
         </div>
       </div>
     </section>
