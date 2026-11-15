@@ -78,6 +78,9 @@ export function startMission(dest, sel, launcherId, tests, commanderId, seed) {
 
 // Picks today's event (or none). Destination and commander style change the odds.
 export function rollEvent(m, dest, commanderId) {
+  // The first two days are calm so the crew can settle in; events start on day 3 and build up
+  if (m.day < 2) return null
+  const ramp = Math.min(1, (m.day - 1) / 3)
   const r = rng(m.seed + m.day * 977 + 13)
   const st = styleOf(commanderId)
   const pool = []
@@ -110,7 +113,7 @@ export function rollEvent(m, dest, commanderId) {
     add('co2', 0.07 * st.danger)
     add('medical', 0.05 + m.day * 0.004)
     add('conflict', (0.03 + m.day * 0.01) * (st.conflict || 1))
-    if (m.day === 1) add('gravity', 0.7)
+    if (m.day === 2) add('gravity', 1)
   } else add('gyro', 0.06)
   if (dest.id === 'moon') { add('dust', 0.1); add('shadowIce', 0.1); add('earthset', 0.08) }
   if (dest.id === 'mars') { add('dustDevil', 0.06); add('conjunction', m.day > 4 && !m.conjunctionSeen ? 0.12 : 0) }
@@ -118,7 +121,7 @@ export function rollEvent(m, dest, commanderId) {
   if (dest.crewed) { add('homeMessage', 0.06); add('harvest', m.day > 3 ? 0.05 : 0); add('drill', m.drilled ? 0 : 0.06) }
   if (dest.id === 'mars') add('dustStorm', 0.08)
   if (dest.delayMin > 5) add('delay', 0.07)
-  for (const [id, w] of pool) if (r() < w) return id
+  for (const [id, w] of pool) if (r() < w * ramp) return id
   return null
 }
 
