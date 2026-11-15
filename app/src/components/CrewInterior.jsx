@@ -5,7 +5,7 @@ import { OrbitControls, Stars, useGLTF, useTexture } from '@react-three/drei'
 import * as THREE from 'three'
 import { crewById } from '../data/crew'
 import { crewPlaces } from '../logic/crewPlaces'
-import { route } from '../logic/deckRoute'
+import { route, regionOf } from '../logic/deckRoute'
 import { SYSTEMS, BROKEN } from '../logic/ship'
 import { useT } from '../i18n'
 import { dressAstronaut } from './dressAstronaut'
@@ -56,6 +56,10 @@ function RoomLabel({ text, at }) {
   )
 }
 
+// Where everyone stands right now (for personal space)
+const standing = new Map()
+const PERSONAL = 1.25 // metres
+
 function Astronaut({ place, nodes }) {
   const { scene } = useGLTF('/models/astronaut.glb')
   const info = crewById[place.id]
@@ -86,6 +90,24 @@ function Astronaut({ place, nodes }) {
         walking = true
         g.position.add(d.normalize().multiplyScalar(Math.min(dist, WALK * dt)))
         g.rotation.y = THREE.MathUtils.lerp(g.rotation.y, Math.atan2(d.x, d.z), 0.25)
+      }
+    }
+    standing.set(place.id, g.position)
+    if (!walking && place.mode !== 'sleep' && place.mode !== 'argue') {
+      // A soft push away from anyone closer than arm's length (only while standing still)
+      const push = new THREE.Vector3()
+      standing.forEach((p, other) => {
+        if (other === place.id) return
+        const d = new THREE.Vector3(g.position.x - p.x, 0, g.position.z - p.z)
+        const len = d.length()
+        if (len < PERSONAL && len > 0.0001) push.add(d.multiplyScalar((PERSONAL - len) / len))
+        else if (len <= 0.0001) push.x += 0.3
+      })
+      if (push.lengthSq() > 0) {
+        const step = push.clampLength(0, 0.6 * dt)
+        const nxt = g.position.clone().add(step)
+        // never let the push carry anyone through a wall
+        if (regionOf(nodes, nxt) === regionOf(nodes, g.position)) g.position.copy(nxt)
       }
     }
     if (!walking) {

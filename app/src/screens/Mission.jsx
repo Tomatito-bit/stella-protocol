@@ -195,7 +195,7 @@ function Logbook() {
   const [spread, setSpread] = useState(() => (import.meta.env.DEV ? Number(new URLSearchParams(location.search).get('lpage')) || 0 : 0))
   // While the cover swings open, the left page stays hidden under it
   const [opening, setOpening] = useState(true)
-  useEffect(() => { const id = setTimeout(() => setOpening(false), 380); return () => clearTimeout(id) }, [])
+  useEffect(() => { const id = setTimeout(() => setOpening(false), 640); return () => clearTimeout(id) }, [])
   const spreads = m.systems
     ? [['report', 'crew'], ['supplies', 'event'], ['tasks', 'plan']]
     : m.crew ? [['report', 'crew'], ['event', 'plan']] : [['report', 'supplies'], ['event', 'plan']]
@@ -223,7 +223,7 @@ function Logbook() {
         {/* Opening: the cover swings open over the spiral while the left page is revealed */}
         <div className="cover-opening" aria-hidden>
           <div className="cover-face front"><span>{t('journal')}</span><b>{t('day')} {m.day + 1}</b></div>
-          <div className="cover-face back" />
+          <div className="cover-face back page left"><SpreadFlow kinds={spreads[spread]} inFace="left" /></div>
         </div>
         <div className="page left" aria-hidden />
         <div className="page right" aria-hidden />

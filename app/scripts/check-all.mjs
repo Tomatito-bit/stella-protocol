@@ -17,6 +17,7 @@ import { STRINGS } from '../src/i18n.js'
 import { useGame } from '../src/store.js'
 import * as THREE from 'three'
 import { route, regionOf } from '../src/logic/deckRoute.js'
+import { ROOM_SLOTS } from '../src/logic/crewPlaces.js'
 
 let fails = 0
 let checks = 0
@@ -140,7 +141,7 @@ section('Caminatas en la nave: siempre por las puertas')
   const json = JSON.parse(glb.slice(20, 20 + glb.readUInt32LE(12)).toString())
   const nodes = {}
   json.nodes.forEach((n) => { if (/^(Room_|Door_|Hall_|Spot_|Bed_|Shelter)/.test(n.name || '')) { const [x, y, z] = n.translation || [0, 0, 0]; nodes[n.name] = new THREE.Vector3(x, y, z) } })
-  const spots = Object.keys(nodes).filter((k) => /^(Spot_|Bed_|Shelter|Room_Airlock)/.test(k))
+  const spots = Object.keys(nodes).filter((k) => /^(Spot_|Bed_|Shelter|Room_)/.test(k))
   const offsets = [[0, 0], [0.55, 0], [-0.55, 0], [0, 0.5], [0, 0.95]]
   let walks = 0
   let crossings = 0
@@ -164,7 +165,7 @@ section('Caminatas en la nave: siempre por las puertas')
     return pts
   }
   // Same offsets the game uses: beds always [0, 0.95]; shared job spots use the side-by-side slots
-  for (const a of spots) for (const b of spots) for (const off of (/^Bed_/.test(b) ? [[0, 0.95]] : offsets.slice(0, 4))) {
+  for (const a of spots) for (const b of spots) for (const off of (/^Bed_/.test(b) ? [[0, 0.95]] : /^Room_/.test(b) ? [[0, 0], ...ROOM_SLOTS] : [[0, 0], [0.55, 0], [-0.55, 0]])) {
     const path = walk(nodes[a].clone(), b, off)
     // change of plans mid-walk: from a point halfway along the first leg, head somewhere else
     if (path.length > 2) for (const c of spots.slice(0, 6)) walk(path[0].clone().lerp(path[1], 0.5), c, [0, 0])

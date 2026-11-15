@@ -1,159 +1,190 @@
-// Game music, composed in code and synthesized live with the Web Audio API (no audio files).
-// A small step sequencer schedules notes a little ahead of time; tracks crossfade when the mood changes.
+// Original score for Stella Protocol, synthesized live with the Web Audio API (no audio files).
+// Style: cinematic space organ — pipe-organ stops, a cathedral reverb, slowly growing ostinatos
+// and a ticking clock. All melodies and progressions here are original.
 import { audioOut } from './sound'
 
 const hz = (midi) => 440 * Math.pow(2, (midi - 69) / 12)
-const N = { D2: 38, F2: 41, G2: 43, A2: 45, Bb2: 46, C3: 48, D3: 50, E3: 52, F3: 53, G3: 55, A3: 57, Bb3: 58, C4: 60, D4: 62, E4: 64, F4: 65, G4: 67, A4: 69, Bb4: 70, C5: 72, D5: 74, E5: 76, F5: 77, G5: 79, A5: 81 }
+// A natural minor, plus a few colours (MIDI numbers)
+const A2 = 45, C3 = 48, D3 = 50, E3 = 52, F3 = 53, G3 = 55, A3 = 57, B3 = 59, C4 = 60, D4 = 62, E4 = 64, F4 = 65, G4 = 67, A4 = 69, B4 = 71, C5 = 72, D5 = 74, E5 = 76
+
+// ---------- Cathedral reverb (synthetic impulse response, built once) ----------
+let room = null
+function reverb(c, out) {
+  if (room && room.ctx === c) return room
+  const len = Math.floor(c.sampleRate * 5.5)
+  const ir = c.createBuffer(2, len, c.sampleRate)
+  for (let ch = 0; ch < 2; ch++) {
+    const d = ir.getChannelData(ch)
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3.2)
+  }
+  const conv = c.createConvolver()
+  conv.buffer = ir
+  const wet = c.createGain()
+  wet.gain.value = 0.55
+  conv.connect(wet).connect(out)
+  room = { ctx: c, input: conv }
+  return room
+}
 
 // ---------- Instruments ----------
-function env(c, g, t, a, peak, d, sustain = 0.0001) {
-  g.gain.setValueAtTime(0.0001, t)
-  g.gain.exponentialRampToValueAtTime(peak, t + a)
-  g.gain.exponentialRampToValueAtTime(Math.max(sustain, 0.0001), t + a + d)
-}
-function voice(c, out, type, f, t, dur, vol, cutoff = 2000, detune = 0) {
-  const o = c.createOscillator()
-  const flt = c.createBiquadFilter()
+// Pipe organ: several stops (8', 4', 2 2/3', 2', 16') summed, slow speech, long release
+const STOPS = [[1, 1], [2, 0.5], [3, 0.22], [4, 0.18], [0.5, 0.35]]
+function organ(c, dry, wet, midi, t, dur, vol = 0.05, attack = 0.35) {
   const g = c.createGain()
-  o.type = type
-  o.frequency.setValueAtTime(f, t)
-  o.detune.value = detune
-  flt.type = 'lowpass'
-  flt.frequency.value = cutoff
-  o.connect(flt).connect(g).connect(out)
-  return { o, flt, g, start: () => { o.start(t); o.stop(t + dur + 0.6) } }
+  g.gain.setValueAtTime(0.0001, t)
+  g.gain.linearRampToValueAtTime(vol, t + attack)
+  g.gain.setValueAtTime(vol, t + Math.max(attack, dur - 0.05))
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 1.4)
+  const tone = c.createBiquadFilter()
+  tone.type = 'lowpass'
+  tone.frequency.value = 2400
+  g.connect(tone)
+  tone.connect(dry)
+  tone.connect(wet)
+  STOPS.forEach(([mult, level], i) => {
+    const o = c.createOscillator()
+    o.type = i === 0 ? 'triangle' : 'sine'
+    o.frequency.value = hz(midi) * mult
+    o.detune.value = (i % 2 ? 3 : -3)
+    const lg = c.createGain()
+    lg.gain.value = level
+    o.connect(lg).connect(g)
+    o.start(t)
+    o.stop(t + dur + 1.6)
+  })
 }
-const I = {
-  // Soft evolving pad (two detuned saws per note)
-  pad(c, out, notes, t, dur, vol = 0.05) {
-    notes.forEach((n) => [-7, 7].forEach((det) => {
-      const v = voice(c, out, 'sawtooth', hz(n), t, dur, vol, 900, det)
-      v.g.gain.setValueAtTime(0.0001, t)
-      v.g.gain.linearRampToValueAtTime(vol, t + dur * 0.35)
-      v.g.gain.linearRampToValueAtTime(0.0001, t + dur + 0.4)
-      v.start()
-    }))
-  },
-  pluck(c, out, n, t, vol = 0.07) {
-    const v = voice(c, out, 'triangle', hz(n), t, 0.6, vol, 3000)
-    env(c, v.g, t, 0.005, vol, 0.55)
-    v.start()
-  },
-  bass(c, out, n, t, dur, vol = 0.12) {
-    const v = voice(c, out, 'sawtooth', hz(n), t, dur, vol, 320)
-    env(c, v.g, t, 0.01, vol, dur * 0.9, vol * 0.3)
-    v.start()
-  },
-  // Brass-like lead: filter opens on each note
-  brass(c, out, n, t, dur, vol = 0.07) {
-    ;[-6, 6].forEach((det) => {
-      const v = voice(c, out, 'sawtooth', hz(n), t, dur, vol, 500, det)
-      v.flt.frequency.setValueAtTime(500, t)
-      v.flt.frequency.linearRampToValueAtTime(2600, t + 0.08)
-      v.flt.frequency.linearRampToValueAtTime(1400, t + dur)
-      v.g.gain.setValueAtTime(0.0001, t)
-      v.g.gain.linearRampToValueAtTime(vol, t + 0.05)
-      v.g.gain.setValueAtTime(vol, t + dur * 0.8)
-      v.g.gain.linearRampToValueAtTime(0.0001, t + dur + 0.15)
-      v.start()
-    })
-  },
-  kick(c, out, t, vol = 0.5) {
-    const o = c.createOscillator()
-    const g = c.createGain()
-    o.frequency.setValueAtTime(130, t)
-    o.frequency.exponentialRampToValueAtTime(42, t + 0.18)
-    env(c, g, t, 0.003, vol, 0.3)
-    o.connect(g).connect(out)
-    o.start(t)
-    o.stop(t + 0.4)
-  },
-  noise(c, out, t, dur, type, freq, vol) {
-    const buf = c.createBuffer(1, Math.ceil(c.sampleRate * dur), c.sampleRate)
-    const d = buf.getChannelData(0)
-    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1
-    const src = c.createBufferSource()
-    src.buffer = buf
-    const f = c.createBiquadFilter()
-    f.type = type
-    f.frequency.value = freq
-    const g = c.createGain()
-    env(c, g, t, 0.002, vol, dur)
-    src.connect(f).connect(g).connect(out)
-    src.start(t)
-  },
-  snare(c, out, t, vol = 0.22) { I.noise(c, out, t, 0.18, 'bandpass', 1800, vol); I.kick(c, out, t, 0.08) },
-  hat(c, out, t, vol = 0.05) { I.noise(c, out, t, 0.04, 'highpass', 7000, vol) },
-  timpani(c, out, n, t, vol = 0.3) {
-    const o = c.createOscillator()
-    const g = c.createGain()
-    o.frequency.setValueAtTime(hz(n) * 1.08, t)
-    o.frequency.exponentialRampToValueAtTime(hz(n), t + 0.12)
-    env(c, g, t, 0.004, vol, 0.9)
-    o.connect(g).connect(out)
-    o.start(t)
-    o.stop(t + 1.2)
-  },
+// Soft high arpeggio "glass" voice for the ostinato
+function glass(c, dry, wet, midi, t, vol = 0.03) {
+  const o = c.createOscillator()
+  const g = c.createGain()
+  o.type = 'sine'
+  o.frequency.value = hz(midi)
+  g.gain.setValueAtTime(0.0001, t)
+  g.gain.linearRampToValueAtTime(vol, t + 0.02)
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 1.1)
+  o.connect(g)
+  g.connect(dry)
+  g.connect(wet)
+  o.start(t)
+  o.stop(t + 1.2)
+}
+// Clock tick: a tiny filtered click
+function tick(c, out, t, vol = 0.06, high = true) {
+  const buf = c.createBuffer(1, Math.ceil(c.sampleRate * 0.03), c.sampleRate)
+  const d = buf.getChannelData(0)
+  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (d.length / 6))
+  const src = c.createBufferSource()
+  src.buffer = buf
+  const f = c.createBiquadFilter()
+  f.type = 'bandpass'
+  f.frequency.value = high ? 3200 : 2200
+  f.Q.value = 6
+  const g = c.createGain()
+  g.gain.value = vol
+  src.connect(f).connect(g).connect(out)
+  src.start(t)
+}
+// Deep drum hit (timpani / taiko)
+function drum(c, dry, wet, t, vol = 0.35, midi = A2 - 12) {
+  const o = c.createOscillator()
+  const g = c.createGain()
+  o.frequency.setValueAtTime(hz(midi) * 1.6, t)
+  o.frequency.exponentialRampToValueAtTime(hz(midi), t + 0.15)
+  g.gain.setValueAtTime(vol, t)
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 1.4)
+  o.connect(g)
+  g.connect(dry)
+  g.connect(wet)
+  o.start(t)
+  o.stop(t + 1.5)
 }
 
-// ---------- Tracks: each step is a 16th note ----------
+// ---------- Tracks (step = one 8th note) ----------
+// Chords are bass + voicing; each track loops its progression and grows layer by layer
 const TRACKS = {
-  // Calm space ambience: A minor → F → C → G, slow pad and a sparse arpeggio
+  // Home and menus: lonely organ chords and a slow clock — "looking at Earth from the window"
   calm: {
-    bpm: 72, bars: 4,
-    play(c, out, step, t, spb) {
-      const bar = Math.floor(step / 16) % 4
-      const s = step % 16
-      const chords = [[N.A3, N.C4, N.E4], [N.F3, N.A3, N.C4], [N.C4, N.E4, N.G4], [N.G3, N.Bb3, N.D4]]
-      const ch = chords[bar]
-      if (s === 0) { I.pad(c, out, ch, t, spb * 16 * 0.98, 0.035); I.bass(c, out, ch[0] - 12, t, spb * 14, 0.06) }
-      if (s % 3 === 0) I.pluck(c, out, ch[(s / 3) % 3] + 12, t, 0.035)
+    bpm: 66, len: 64,
+    play(c, dry, wet, step, t, spb) {
+      const bar = Math.floor(step / 8) % 8
+      const s = step % 8
+      const prog = [[A2, [A3, C4, E4]], [F3 - 12, [A3, C4, F4]], [C3, [G3, C4, E4]], [G3 - 12, [G3, B3, D4]], [A2, [A3, C4, E4]], [D3, [A3, D4, F4]], [F3 - 12, [A3, C4, F4]], [E3 - 12, [G3, B3, E4]]]
+      const [bass, v] = prog[bar]
+      if (s === 0) { organ(c, dry, wet, bass, t, spb * 8, 0.035, 0.8); v.forEach((n) => organ(c, dry, wet, n, t, spb * 8, 0.018, 0.9)) }
+      if (s % 2 === 0) tick(c, dry, t, 0.035, s === 0)
+      // a sparse, rising glass motif in the second half of the loop
+      if (Math.floor(step / 64) % 2 === 1 && (s === 0 || s === 3 || s === 6)) glass(c, dry, wet, v[(s / 3) % 3] + 12, t, 0.02)
     },
   },
-  // Risky but brave: D minor epic progression, driving drums, ostinato bass, brass motif
+  // Mission days: the organ ostinato — two alternating notes over a pedal, gathering stops as it loops
+  mission: {
+    bpm: 84, len: 64,
+    play(c, dry, wet, step, t, spb) {
+      const bar = Math.floor(step / 8) % 8
+      const s = step % 8
+      const loop = Math.floor(step / 64)
+      const prog = [[A2, [E4, A4]], [A2, [E4, B4]], [F3 - 12, [F4, A4]], [F3 - 12, [E4, A4]], [C3, [E4, G4]], [C3, [D4, G4]], [G3 - 12, [D4, B4]], [E3 - 12, [E4, B4]]]
+      const [bass, pair] = prog[bar]
+      if (s === 0) organ(c, dry, wet, bass, t, spb * 8, 0.032, 0.6)
+      organ(c, dry, wet, pair[s % 2], t, spb * 0.9, 0.012 + Math.min(loop, 3) * 0.004, 0.05)
+      if (loop >= 1 && s === 0) organ(c, dry, wet, pair[1] + 12, t, spb * 8, 0.01, 1.2)
+      if (s % 2 === 0) tick(c, dry, t, 0.028, s === 0)
+    },
+  },
+  // Events: urgent and brave — faster pulse, low drums, organ swells pushing upward
   tense: {
-    bpm: 104, bars: 4,
-    play(c, out, step, t, spb) {
-      const bar = Math.floor(step / 16) % 4
-      const s = step % 16
-      const roots = [N.D2, N.Bb2 - 12, N.F2, N.C3 - 12]
-      const chords = [[N.D4, N.F4, N.A4], [N.Bb3, N.D4, N.F4], [N.F3, N.A3, N.C4], [N.C4, N.E4, N.G4]]
-      if (s === 0) I.pad(c, out, chords[bar], t, spb * 16 * 0.95, 0.03)
-      if (s % 2 === 0) I.bass(c, out, roots[bar] + 12, t, spb * 1.6, 0.11)
-      if (s === 0 || s === 8 || s === 10) I.kick(c, out, t, 0.45)
-      if (s === 4 || s === 12) I.snare(c, out, t)
-      if (s % 2 === 1) I.hat(c, out, t)
-      if (bar === 3 && s >= 12) I.timpani(c, out, N.D3 - 12, t, 0.18)
-      // Heroic motif: D–A–F–G | A … on bars 1 and 3
-      const motif = { 0: [N.D5, 3], 4: [N.A4, 2], 6: [N.F5, 2], 8: [N.G5, 4], 12: [N.A5, 4] }
-      if ((bar === 0 || bar === 2) && motif[s]) I.brass(c, out, motif[s][0], t, spb * motif[s][1], 0.05)
-      if (bar === 1 && s === 0) I.brass(c, out, N.F5, t, spb * 8, 0.045)
-      if (bar === 3 && s === 0) I.brass(c, out, N.E5, t, spb * 8, 0.045)
+    bpm: 112, len: 32,
+    play(c, dry, wet, step, t, spb) {
+      const bar = Math.floor(step / 8) % 4
+      const s = step % 8
+      const prog = [[A2, [A3, C4, E4], [E5, C5]], [F3 - 12, [A3, C4, F4], [F4 + 12, C5]], [D3 - 12, [A3, D4, F4], [D5, A4]], [E3 - 12, [B3, E4, G4 + 1], [E5, B4]]]
+      const [bass, chord, top] = prog[bar]
+      organ(c, dry, wet, bass, t, spb * 0.8, 0.03, 0.02) // driving pedal 8ths
+      if (s === 0) chord.forEach((n) => organ(c, dry, wet, n, t, spb * 8, 0.016, 0.25))
+      organ(c, dry, wet, top[s % 2], t, spb * 0.7, 0.012, 0.02)
+      if (s === 0 || s === 3 || s === 6) drum(c, dry, wet, t, s === 0 ? 0.32 : 0.18)
+      if (bar === 3 && s >= 4) drum(c, dry, wet, t, 0.12 + (s - 4) * 0.05, A2)
+      tick(c, dry, t, 0.03, s % 2 === 0)
     },
   },
-  // Launch: timpani roll that grows, rising pad
+  // Launch: everything builds — organ pedal swelling, drums accelerating
   launch: {
-    bpm: 96, bars: 4,
-    play(c, out, step, t, spb) {
-      const bar = Math.floor(step / 16) % 4
-      const s = step % 16
-      if (s === 0) I.pad(c, out, [[N.D4, N.A4], [N.E4, N.A4], [N.F4, N.C5], [N.G4, N.D5]][bar], t, spb * 16, 0.04)
-      if (s % (bar < 2 ? 4 : 2) === 0) I.timpani(c, out, N.D3 - 12, t, 0.12 + bar * 0.05)
-      if (s === 0) I.kick(c, out, t, 0.3)
+    bpm: 96, len: 64,
+    play(c, dry, wet, step, t, spb) {
+      const bar = Math.floor(step / 8) % 8
+      const s = step % 8
+      const v = [[A3, E4], [A3, E4], [A3, F4], [A3, F4], [C4, G4], [C4, G4], [B3, E4 + 1], [B3, E4 + 1]][bar]
+      if (s === 0) { organ(c, dry, wet, A2 - (bar >= 6 ? 0 : 0), t, spb * 8, 0.03 + bar * 0.003, 0.5); v.forEach((n) => organ(c, dry, wet, n, t, spb * 8, 0.014 + bar * 0.002, 0.6)) }
+      const every = bar < 2 ? 8 : bar < 4 ? 4 : bar < 6 ? 2 : 1
+      if (s % every === 0) drum(c, dry, wet, t, 0.12 + bar * 0.03)
+      if (s % 2 === 0) tick(c, dry, t, 0.03, s === 0)
+      if (bar >= 4) glass(c, dry, wet, [A4, C5, E5, A4][s % 4] + (bar >= 6 ? 12 : 0), t, 0.015)
     },
   },
 }
+TRACKS.menu = TRACKS.calm
 
-let state = null // { name, gain, step, next, timer }
+let state = null
 
 function schedule(st, c) {
   const tr = TRACKS[st.name]
-  const spb = 60 / tr.bpm / 4
-  while (st.next < c.currentTime + 0.25) {
-    tr.play(c, st.gain, st.step, st.next, spb)
+  const spb = 60 / tr.bpm / 2
+  while (st.next < c.currentTime + 0.3) {
+    tr.play(c, st.dry, st.wet, st.step, st.next, spb)
     st.step += 1
     st.next += spb
   }
+}
+
+// Fade a track's dry signal and its reverb send together, then let it go
+function fadeOut(st, c, secs = 2) {
+  clearInterval(st.timer)
+  ;[st.dry, st.wet].forEach((g) => {
+    g.gain.cancelScheduledValues(c.currentTime)
+    g.gain.setValueAtTime(g.gain.value, c.currentTime)
+    g.gain.linearRampToValueAtTime(0.0001, c.currentTime + secs)
+  })
+  setTimeout(() => { st.dry.disconnect(); st.wet.disconnect() }, (secs + 0.6) * 1000)
 }
 
 // Switch to a track (crossfades); null stops the music
@@ -162,42 +193,42 @@ export function playMusic(name) {
   if (!a) return
   if (state && state.name === name) return
   const { ctx: c, out } = a
-  if (state) {
-    const old = state
-    old.gain.gain.cancelScheduledValues(c.currentTime)
-    old.gain.gain.setValueAtTime(old.gain.gain.value, c.currentTime)
-    old.gain.gain.linearRampToValueAtTime(0.0001, c.currentTime + 1.2)
-    clearInterval(old.timer)
-    setTimeout(() => old.gain.disconnect(), 1600)
-    state = null
-  }
+  if (state) { fadeOut(state, c); state = null }
   if (!name || !TRACKS[name]) return
-  const gain = c.createGain()
-  gain.gain.setValueAtTime(0.0001, c.currentTime)
-  gain.gain.linearRampToValueAtTime(0.55, c.currentTime + 1.5)
-  gain.connect(out)
-  const st = { name, gain, step: 0, next: c.currentTime + 0.1 }
-  st.timer = setInterval(() => schedule(st, c), 60)
+  // dry signal straight to the master; a separate send into the shared cathedral reverb
+  const dry = c.createGain()
+  const wet = c.createGain()
+  dry.connect(out)
+  wet.connect(reverb(c, out).input)
+  ;[[dry, 0.7], [wet, 1]].forEach(([g, v]) => { g.gain.setValueAtTime(0.0001, c.currentTime); g.gain.linearRampToValueAtTime(v, c.currentTime + 2.5) })
+  const st = { name, dry, wet, step: 0, next: c.currentTime + 0.15 }
+  st.timer = setInterval(() => schedule(st, c), 80)
   schedule(st, c)
   state = st
 }
 
-// Short end-of-mission stinger
+// End-of-mission stinger: a rising major organ chord, or a falling minor one
 export function playStinger(win) {
   const a = audioOut()
   if (!a) return
   playMusic(null)
   const { ctx: c, out } = a
-  const t = c.currentTime + 0.1
-  const g = c.createGain()
-  g.gain.value = 0.6
-  g.connect(out)
+  const t = c.currentTime + 0.2
+  const bus = c.createGain()
+  bus.gain.value = 0.8
+  bus.connect(out)
+  const wet = c.createGain()
+  wet.connect(reverb(c, out).input)
   if (win) {
-    ;[N.C4, N.E4, N.G4, N.C5].forEach((n, i) => I.brass(c, g, n, t + i * 0.18, i === 3 ? 1.6 : 0.2, 0.06))
-    I.pad(c, g, [N.C4, N.E4, N.G4], t + 0.54, 2.5, 0.04)
-    I.timpani(c, g, N.C3 - 12, t + 0.54, 0.3)
+    ;[[A2, [A3, C4 + 1, E4]], [D3, [A3, D4, F4 + 1]], [A2, [A3, C4 + 1, E4, A4]]].forEach(([b, v], i) => {
+      organ(c, bus, wet, b, t + i * 1.4, i === 2 ? 4 : 1.4, 0.04, 0.3)
+      v.forEach((n) => organ(c, bus, wet, n, t + i * 1.4, i === 2 ? 4 : 1.4, 0.018, 0.3))
+    })
+    drum(c, bus, wet, t + 2.8, 0.3)
   } else {
-    ;[N.A4, N.F4, N.D4, N.A3].forEach((n, i) => I.brass(c, g, n, t + i * 0.45, i === 3 ? 2.2 : 0.4, 0.045))
-    I.pad(c, g, [N.D3, N.F3, N.A3], t + 1.35, 3, 0.035)
+    ;[[A2, [A3, C4, E4]], [F3 - 12, [A3, C4, F4]], [E3 - 12, [G3, B3, E4]], [A2, [A3, C4, E4]]].forEach(([b, v], i) => {
+      organ(c, bus, wet, b, t + i * 1.6, i === 3 ? 4.5 : 1.6, 0.035, 0.5)
+      v.forEach((n) => organ(c, bus, wet, n, t + i * 1.6, i === 3 ? 4.5 : 1.6, 0.014, 0.5))
+    })
   }
 }

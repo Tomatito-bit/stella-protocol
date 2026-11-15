@@ -25,7 +25,7 @@ export default function App() {
   // Music follows the moment: calm menus, launch drums, calm mission, brave theme while an event is on
   useEffect(() => {
     if (screen === 'legacy') return
-    playMusic(screen === 'launch' ? 'launch' : screen === 'mission' && (live || event) ? 'tense' : 'calm')
+    playMusic(screen === 'launch' ? 'launch' : screen === 'mission' ? (live || event ? 'tense' : 'mission') : 'calm')
   }, [screen, live, event])
   return (
     <div className="app">

@@ -6,8 +6,12 @@ const SYSTEM_ROOM = Object.fromEntries(Object.entries(SYSTEMS).map(([id, s]) => 
 const DUTY_SPOT = { pilot: 'Spot_pilot', scientist: 'Spot_scientist', doctor: 'Spot_doctor', engineer: 'Spot_engineer' }
 const ARGUE = ['conflict', 'routineClash', 'scienceVsSafety', 'enginesHot', 'authority', 'deadlock', 'pilotEngineer', 'analystParanoia', 'riskReport', 'catastrophe']
 
+// Extra places to stand inside a room, around its centre (metres), so people spread out
+export const ROOM_SLOTS = [[-1.6, -0.6], [1.6, -0.6], [-1.4, 0.8], [1.4, 0.8]]
+
 // Room each spot belongs to (routes go room door → corridor → room door)
 export const SPOT_ROOM = {
+  Room_Bridge: 'Bridge', Room_Lab: 'Lab', Room_Medbay: 'Medbay', Room_Engines: 'Engines', Room_Galley: 'Galley', Room_LifeSupport: 'LifeSupport', Room_Quarters: 'Quarters',
   Spot_pilot: 'Bridge', Spot_scientist: 'Lab', Spot_doctor: 'Medbay', Spot_engineer: 'Engines',
   Spot_commons: 'Galley', Shelter: 'LifeSupport', Room_Airlock: 'Airlock', Bed_1: 'Quarters', Bed_2: 'Quarters', Bed_3: 'Quarters', Bed_4: 'Quarters',
 }
@@ -22,8 +26,14 @@ export function crewPlaces(crew, { plan, event, tasks }) {
   const argue = ARGUE.includes(event)
   let arguing = 0
   const crowd = {}
-  // Two people at the same spot stand side by side instead of on top of each other
-  const at = (c, spot, mode) => { const k = crowd[spot] = (crowd[spot] || 0) + 1; return { id: c.id, spot, offset: [[0, 0], [0.55, 0], [-0.55, 0], [0, 0.5]][(k - 1) % 4], mode } }
+  // The first person takes the job's spot; anyone else doing the same job works elsewhere in that room
+  const at = (c, spot, mode) => {
+    const k = crowd[spot] = (crowd[spot] || 0) + 1
+    if (k === 1) return { id: c.id, spot, offset: [0, 0], mode }
+    const room = SPOT_ROOM[spot]
+    const slot = ROOM_SLOTS[(k - 2) % ROOM_SLOTS.length]
+    return room ? { id: c.id, spot: `Room_${room}`, offset: slot, mode } : { id: c.id, spot, offset: [0.6 * (k - 1), 0], mode }
+  }
   return crew.map((c, i) => {
     if (event === 'homeMessage' || event === 'harvest') return at(c, 'Spot_commons', 'idle')
     if (event === 'drill' || event === 'gravity') return at(c, 'Room_Airlock', 'work')
