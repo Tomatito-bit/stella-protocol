@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { startHum, stopHum } from '../sound'
+import { startHum, stopHum, sfx } from '../sound'
 import { TUTORIAL } from '../data/tutorial'
 import { useGame } from '../store'
 import { useT } from '../i18n'
@@ -213,15 +213,6 @@ function Vital({ label, v, invert }) {
   )
 }
 
-// How a crew member "reads" in the logbook, in words instead of numbers (60 Parsecs style)
-function mood(c, t) {
-  if (c.health < 40) return t('mood_sick')
-  if (c.energy < 30) return t('mood_tired')
-  if (c.morale < 35) return t('mood_down')
-  if (c.health > 85 && c.energy > 70 && c.morale > 70) return t('mood_great')
-  return t('mood_ok')
-}
-
 // The logbook: left page = what happened, right page = today's decisions
 // The commander's colour dresses the logbook cover
 function useCover() {
@@ -250,131 +241,273 @@ function ClosedLogbook({ day, pending, onOpen }) {
   )
 }
 
+// The logbook: several pages per day, like the 60 Seconds journal.
+// Crewed: report + crew → supplies + today's problem → jobs + the day's plan. Robotic: report + probe → problem + plan.
 function Logbook() {
-  const { t, L } = useT()
-  const { mission: m, event, pick, orderPick, plan, setPlan, pickOption, pickOrder, startDay, closeJournal, tasks, suggestTasks, ration, toggleRation } = useGame()
-  const destId = useGame((s) => s.destinationId)
+  const { t } = useT()
+  const { mission: m, closeJournal } = useGame()
   const cover = useCover()
-  const [back, setBack] = useState(0) // pages back in history
-  const page = m.journal[m.journal.length - 1 - back]
-  const ev = event && EVENTS[event]
-  const canAct = (o) => (o.needs === 'fuel' ? m.spareTanks > 0 : o.needs === 'spares' ? m.spares > 0 : o.needs === 'medkit' ? (m.parts.medkit || 0) > 0 : true) && (!o.crewedOnly || !!m.crew)
-  const ready = !ev || !!pick
-
+  const [spread, setSpread] = useState(() => (import.meta.env.DEV ? Number(new URLSearchParams(location.search).get('lpage')) || 0 : 0))
+  const spreads = m.systems
+    ? [['report', 'crew'], ['supplies', 'event'], ['tasks', 'plan']]
+    : m.crew ? [['report', 'crew'], ['event', 'plan']] : [['report', 'supplies'], ['event', 'plan']]
+  const turn = (k) => { sfx.page(); setSpread(spread + k) }
+  const [left, right] = spreads[spread]
   return (
     <div className="modal-bg logbook-bg">
       <div className="logbook" style={{ '--cover': cover.color }}>
         <div className="cover-opening" aria-hidden />
         <div className="rings" aria-hidden />
-        {/* Left page: the report */}
-        <div className="page left">
-          <div className="coffee" aria-hidden />
-          <figure className="polaroid">
-            <div className="polaroid-img" style={{ backgroundImage: `url(/textures/${destId}.jpg)` }} />
-            <figcaption>{t('day')} {m.day}</figcaption>
-          </figure>
-          <div className="page-head">
-            <span className="tiny">{t('journal')}</span>
-            <h2>{page.day === 0 ? t('arrival') : `${t('day')} ${page.day}`}</h2>
-            {page.plan && <p className="hand muted">{t('todaysPlan')}: {t(`plan_${page.plan}`).toLowerCase()}</p>}
-          </div>
-          <ul className="hand entries">
-            {page.entries.length ? page.entries.map((e, k) => <li key={k} className={e.type}>{L(e.text)}</li>) : <li>{t('quietDay')}</li>}
-          </ul>
-          {page.science > 0 && <p className="stamp">+{page.science} {t('science').toLowerCase()}</p>}
-          {back === 0 && m.crew && (
-            <div className="hand crew-lines">
-              {m.crew.map((c) => <p key={c.id}><b>{crewById[c.id].name.split(' ')[0]}</b>: {mood(c, t)}</p>)}
-            </div>
-          )}
-          {back === 0 && (
-            <p className="hand muted resources">
-              {m.systems ? `O₂ ${Math.round(m.o2)}% · ${t('water')} ${Math.round(m.water)}% · ` : ''}{m.crew ? `${t('supplies')}: ${Math.floor(m.supplies)} d · ` : ''}{t('sparesShort')}: {m.spares} · {t('fuel')}: {m.spareTanks} · {t('electronics')}: {Math.round(m.electronics)}%
-            </p>
-          )}
-          <div className="page-nav">
-            <button onClick={() => setBack(back + 1)} disabled={back >= m.journal.length - 1}>← {t('before')}</button>
-            {back > 0 && <button onClick={() => setBack(back - 1)}>{t('after')} →</button>}
+        <div className="page left" key={`l${spread}`}>
+          <LogPage kind={left} />
+          <div className="page-turn">
+            {spread > 0 ? <button onClick={() => turn(-1)}>← {t('prevPage')}</button> : <button onClick={closeJournal}>{t('lookAround')}</button>}
           </div>
         </div>
+        <div className={`page right turning`} key={`r${spread}`}>
+          <LogPage kind={right} />
+          <div className="page-turn right">
+            {spread < spreads.length - 1 && <button onClick={() => turn(1)}>{t('nextPage')} →</button>}
+          </div>
+        </div>
+        <div className="page-dots">
+          {spreads.map((_, i) => <button key={i} className={i === spread ? 'on' : ''} onClick={() => i !== spread && turn(i - spread)} aria-label={`${i + 1}`} />)}
+        </div>
+      </div>
+    </div>
+  )
+}
 
-        {/* Right page: today's decisions */}
-        <div className="page right">
-          <span className="tiny">{t('today')} · {t('day')} {m.day + 1}</span>
-          {ev ? (
-            <div className="today-event">
-              <h3>{L(ev.title)}</h3>
-              <p className="hand">{L(ev.text)}</p>
-              <div className="hand-options">
-                {ev.options.filter((o) => !o.crewedOnly || m.crew).map((o) => {
-                  const ok = canAct(o)
-                  const on = pick && pick.option === o.id
-                  return (
-                    <button key={o.id} className={`hand-option ${on ? 'on' : ''} risk-${o.risk}`} disabled={!ok} onClick={() => pickOption(o.id, o.risk)}>
-                      <span className="box">{on ? '✓' : ''}</span>
-                      <span>
-                        <b>{L(o.label)}</b> <em className="risk-word">({t(`risk_${o.risk}`).toLowerCase()})</em>
-                        <small>{ok ? L(o.detail) : t('cantDo')}</small>
-                      </span>
-                    </button>
-                  )
-                })}
+function LogPage({ kind }) {
+  if (kind === 'report') return <ReportPage />
+  if (kind === 'crew') return <CrewPage />
+  if (kind === 'supplies') return <SuppliesPage />
+  if (kind === 'event') return <EventPage />
+  if (kind === 'tasks') return <TasksPage />
+  return <PlanPage />
+}
+
+// Yesterday, written down. Older days can be browsed.
+function ReportPage() {
+  const { t, L } = useT()
+  const { mission: m } = useGame()
+  const destId = useGame((s) => s.destinationId)
+  const [back, setBack] = useState(0)
+  const page = m.journal[m.journal.length - 1 - back]
+  return (
+    <>
+      <div className="coffee" aria-hidden />
+      <figure className="polaroid">
+        <div className="polaroid-img" style={{ backgroundImage: `url(/textures/${destId}.jpg)` }} />
+        <figcaption>{t('day')} {page.day}</figcaption>
+      </figure>
+      <div className="page-head">
+        <span className="tiny">{t('journal')}</span>
+        <h2>{page.day === 0 ? t('arrival') : `${t('day')} ${page.day}`}</h2>
+        <p className="hand muted">{t('whatHappened')}</p>
+      </div>
+      <ul className="hand entries">
+        {page.entries.length ? page.entries.map((e, k) => <li key={k} className={e.type}>{L(e.text)}</li>) : <li>{t('quietDay')}</li>}
+      </ul>
+      {page.science > 0 && <p className="stamp">+{page.science} {t('science').toLowerCase()}</p>}
+      <div className="page-nav">
+        <button onClick={() => setBack(back + 1)} disabled={back >= m.journal.length - 1}>← {t('before')}</button>
+        {back > 0 && <button onClick={() => setBack(back - 1)}>{t('after')} →</button>}
+      </div>
+    </>
+  )
+}
+
+// How each person is doing, in words (with a little helmet badge in their colour)
+function CrewPage() {
+  const { t, L } = useT()
+  const { mission: m, tasks } = useGame()
+  const word = (v, hi, mid, lo) => (v > 66 ? hi : v > 33 ? mid : lo)
+  return (
+    <>
+      <span className="tiny">{t('crewPage')}</span>
+      <div className="crew-notes">
+        {m.crew.map((c) => {
+          const info = crewById[c.id]
+          const sore = m.systems && m.day - (c.lastExercise || 0) > 3
+          return (
+            <div key={c.id} className="crew-note" style={{ '--accent': info.color }}>
+              <span className="helmet-badge" aria-hidden><i /></span>
+              <div>
+                <b className="hand">{info.name.split(' ')[0]}{c.commander ? ' ★' : ''}</b> <small className="muted">{L(info.role)}</small>
+                <p className="hand">
+                  {word(c.health, t('w_healthy'), t('w_hurt'), t('w_critical'))}, {word(c.energy, t('w_rested'), t('w_tired'), t('w_exhausted'))}, {word(c.morale, t('w_upbeat'), t('w_calm'), t('w_down'))}.
+                  {sore && <> {t('w_sore')}</>}
+                </p>
+                {tasks && tasks[c.id] && <small className="hand muted">{t('taskToday')}: {L(TASKS[taskKind(tasks[c.id])].name).toLowerCase()}</small>}
               </div>
-              <p className="fact-note"><span className="tape" aria-hidden />{L(ev.fact)}</p>
             </div>
-          ) : (
-            <p className="hand calm">{t('noEvent')}</p>
-          )}
+          )
+        })}
+      </div>
+    </>
+  )
+}
 
-          {m.systems ? (
-            <>
-              <h4>{t('tasksToday')} <button className="link dark small-link" onClick={suggestTasks}>{t('suggest')}</button></h4>
-              <div className="task-grid">
-                {m.crew.map((c) => (
-                  <div key={c.id} className="task-line">
-                    <b style={{ color: crewById[c.id].color }}>{crewById[c.id].name.split(' ')[0]}</b>
-                    <TaskSelect c={c} />
-                    <small>{L(TASKS[taskKind(tasks && tasks[c.id])].tip)}</small>
-                  </div>
-                ))}
-              </div>
-              <label className="ration hand">
-                <input type="checkbox" checked={ration} onChange={toggleRation} /> {t('rationLabel')}
-              </label>
-            </>
-          ) : (
-            <>
-              <h4>{t('todaysPlan')}</h4>
-              <div className="hand-row">
-                {PLANS.map((p) => (
-                  <button key={p} className={`chip-hand ${plan === p ? 'on' : ''}`} onClick={() => setPlan(p)}>{t(`plan_${p}`)}</button>
-                ))}
-              </div>
-            </>
-          )}
+// Inventory and ship state, like a supply checklist
+function SuppliesPage() {
+  const { t, L } = useT()
+  const { mission: m } = useGame()
+  const dest = destinationById[useGame((s) => s.destinationId)]
+  const rows = [
+    m.systems && ['O₂', `${Math.round(m.o2)}%`, m.o2 < 30],
+    m.systems && [t('water'), `${Math.round(m.water)}%`, m.water < 30],
+    m.crew && [t('supplies'), `${Math.floor(m.supplies)} ${t('daysShort')}`, m.supplies < 3, Math.max(0, Math.floor(m.supplies))],
+    m.systems && [t('powerHud'), `${Math.round(powerLevel(m, dest) * 100)}%`, powerLevel(m, dest) < 0.7],
+    [t('sparesShort'), m.spares, m.spares === 0, m.spares],
+    [t('fuel'), m.spareTanks, m.spareTanks === 0, m.spareTanks],
+    [t('electronics'), `${Math.round(m.electronics)}%`, m.electronics < 50],
+    [t('dose'), `${m.dose.toFixed(1)} mSv`, m.dose > 20],
+  ].filter(Boolean)
+  return (
+    <>
+      <span className="tiny">{t('suppliesPage')}</span>
+      <ul className="hand inventory">
+        {rows.map(([k, v, low, ticks]) => (
+          <li key={k} className={low ? 'low' : ''}>
+            <span>{k}</span>
+            {ticks != null && <span className="ticks" aria-hidden>{Array.from({ length: Math.min(ticks, 16) }, (_, i) => <i key={i} />)}</span>}
+            <b>{v}</b>
+          </li>
+        ))}
+      </ul>
+      {m.systems && (
+        <>
+          <h4>{t('systemsHud')}</h4>
+          <ul className="hand inventory systems-list">
+            {Object.entries(m.systems).map(([id, v]) => (
+              <li key={id} className={v < BROKEN ? 'low circled' : ''}>
+                <span>{L(SYSTEMS[id].name)}</span>
+                <b>{v < BROKEN ? t('w_broken') : v < 60 ? t('w_worn') : t('w_ok')} ({Math.round(v)}%)</b>
+              </li>
+            ))}
+          </ul>
+          {!m.voiceBack && <p className="fact-note"><span className="tape" aria-hidden />{t('goalAntenna')}</p>}
+        </>
+      )}
+    </>
+  )
+}
 
-          {m.crew && !m.systems && (
+// Today's problem and the options
+function EventPage() {
+  const { t, L } = useT()
+  const { mission: m, event, pick, pickOption } = useGame()
+  const ev = event && EVENTS[event]
+  const canAct = (o) => (o.needs === 'fuel' ? m.spareTanks > 0 : o.needs === 'spares' ? m.spares > 0 : o.needs === 'medkit' ? (m.parts.medkit || 0) > 0 : true) && (!o.crewedOnly || !!m.crew)
+  return (
+    <>
+      <span className="tiny">{t('today')} · {t('day')} {m.day + 1}</span>
+      {ev ? (
+        <div className="today-event">
+          <h3>{L(ev.title)}</h3>
+          <p className="hand">{L(ev.text)}</p>
+          <div className="hand-options">
+            {ev.options.filter((o) => !o.crewedOnly || m.crew).map((o) => {
+              const ok = canAct(o)
+              const on = pick && pick.option === o.id
+              return (
+                <button key={o.id} className={`hand-option ${on ? 'on' : ''} risk-${o.risk}`} disabled={!ok} onClick={() => pickOption(o.id, o.risk)}>
+                  <span className="box">{on ? '✓' : ''}</span>
+                  <span>
+                    <b>{L(o.label)}</b> <em className="risk-word">({t(`risk_${o.risk}`).toLowerCase()})</em>
+                    <small>{ok ? L(o.detail) : t('cantDo')}</small>
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+          <p className="fact-note"><span className="tape" aria-hidden />{L(ev.fact)}</p>
+        </div>
+      ) : (
+        <p className="hand calm">{t('noEvent')}</p>
+      )}
+    </>
+  )
+}
+
+// Who does what today
+function TasksPage() {
+  const { t, L } = useT()
+  const { mission: m, tasks, suggestTasks, ration, toggleRation } = useGame()
+  return (
+    <>
+      <span className="tiny">{t('tasksToday')}</span>
+      <div className="task-grid">
+        {m.crew.map((c) => (
+          <div key={c.id} className="task-line">
+            <b style={{ color: crewById[c.id].color }}>{crewById[c.id].name.split(' ')[0]}</b>
+            <TaskSelect c={c} />
+            <small>{L(TASKS[taskKind(tasks && tasks[c.id])].tip)}</small>
+          </div>
+        ))}
+      </div>
+      <button className="link dark" onClick={suggestTasks}>{t('suggest')}</button>
+      <label className="ration hand">
+        <input type="checkbox" checked={ration} onChange={toggleRation} /> {t('rationLabel')}
+      </label>
+    </>
+  )
+}
+
+// Final page: the day's plan in words, warnings, and the button to live it
+function PlanPage() {
+  const { t, L } = useT()
+  const { mission: m, event, pick, plan, setPlan, startDay, tasks, ration, orderPick, pickOrder } = useGame()
+  const ready = !event || !!pick
+  const warn = []
+  if (m.systems && tasks) {
+    const job = (c) => taskKind(tasks[c.id])
+    if (!m.crew.some((c) => job(c) === 'science')) warn.push(t('warnNoScience'))
+    m.crew.filter((c) => c.energy < 25 && job(c) !== 'rest').forEach((c) => warn.push(t('warnExhausted', { n: crewById[c.id].name })))
+    if (Object.values(m.systems).some((v) => v < BROKEN) && !m.crew.some((c) => job(c) === 'repair' || job(c) === 'eva')) warn.push(t('warnBroken'))
+    if (m.o2 < 40 && !m.crew.some((c) => job(c) === 'recycle')) warn.push(t('warnAir'))
+    if (m.crew.some((c) => job(c) === 'repair' && m.systems[(tasks[c.id] || '').split(':')[1]] < BROKEN) && m.spares === 0) warn.push(t('warnSpares'))
+  }
+  if (event && !pick) warn.push(t('warnEvent'))
+  return (
+    <>
+      <span className="tiny">{t('planPage')}</span>
+      {m.systems ? (
+        <ul className="hand entries plan-lines">
+          {m.crew.map((c) => {
+            const task = tasks && tasks[c.id]
+            const target = task && task.split(':')[1]
+            return <li key={c.id}><b>{crewById[c.id].name.split(' ')[0]}</b>: {L(TASKS[taskKind(task)].name).toLowerCase()}{target ? ` · ${L(SYSTEMS[target].name).toLowerCase()}` : ''}</li>
+          })}
+          {ration && <li className="warn">{t('rationOn')}</li>}
+        </ul>
+      ) : (
+        <>
+          <h4>{t('todaysPlan')}</h4>
+          <div className="hand-row">
+            {PLANS.map((p) => <button key={p} className={`chip-hand ${plan === p ? 'on' : ''}`} onClick={() => setPlan(p)}>{t(`plan_${p}`)}</button>)}
+          </div>
+          {m.crew && (
             <>
               <h4>{t('crewOrder')}</h4>
               <div className="order-grid">
                 {m.crew.map((c) => (
                   <div key={c.id} className="order-line">
                     <b style={{ color: crewById[c.id].color }}>{crewById[c.id].name.split(' ')[0]}</b>
-                    {ORDERS.map((o) => (
-                      <button key={o} className={`chip-hand small ${orderPick && orderPick.crewId === c.id && orderPick.order === o ? 'on' : ''}`} onClick={() => pickOrder(c.id, o)}>{t(`order_${o}`)}</button>
-                    ))}
+                    {ORDERS.map((o) => <button key={o} className={`chip-hand small ${orderPick && orderPick.crewId === c.id && orderPick.order === o ? 'on' : ''}`} onClick={() => pickOrder(c.id, o)}>{t(`order_${o}`)}</button>)}
                   </div>
                 ))}
               </div>
             </>
           )}
-
-          <div className="logbook-actions">
-            <button className="link dark" onClick={closeJournal}>{t('lookAround')}</button>
-            <button className="btn" disabled={!ready} onClick={startDay}>{ready ? (m.day + 1 >= m.totalDays ? t('lastDay') : t('liveDay')) : t('chooseFirst')} →</button>
-          </div>
-        </div>
+        </>
+      )}
+      {warn.length > 0 && <ul className="hand warnings">{warn.map((w) => <li key={w}>{w}</li>)}</ul>}
+      <div className="logbook-actions">
+        <span />
+        <button className="btn" disabled={!ready} onClick={startDay}>{ready ? (m.day + 1 >= m.totalDays ? t('lastDay') : t('liveDay')) : t('chooseFirst')} →</button>
       </div>
-    </div>
+    </>
   )
 }
