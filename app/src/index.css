@@ -838,3 +838,9 @@ h2 { font-size: 26px; }
 .entries.marked li.story { font-style: italic; color: #4a3a6a; }
 .entries.marked li.story i { background: #7c5cbf; }
 .crew-past { max-width: 520px; color: #c9b8f0; margin: 0 0 6px; line-height: 1.5; }
+
+/* ---------- One fixed size for the logbook: pages scroll inside instead of resizing the book ---------- */
+.logbook { width: min(1100px, calc(100vw - 32px)); height: min(660px, calc(100dvh - 90px)); max-height: none; grid-template-rows: 100%; }
+.logbook > .page { height: 100%; min-height: 0; max-height: none; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; scrollbar-color: rgba(35, 38, 74, 0.3) transparent; }
+.flip-face { height: 100%; overflow: hidden; }
+@media (max-width: 900px) { .logbook { height: auto; max-height: calc(100dvh - 24px); grid-template-rows: auto; } .logbook > .page { height: auto; } }
