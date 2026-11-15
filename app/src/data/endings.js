@@ -1,3 +1,4 @@
+import { SAMPLE_GOAL } from './exploration'
 // Story endings: which one you get depends on the result, Earth's voice (the antenna) and how the crew came home.
 
 // Endings when the mission is lost: what happened, and the real lesson NASA learned from something similar
@@ -41,6 +42,12 @@ export function endingOf(m, level) {
     text: { es: 'La antena nunca se reparó. La tripulación trabajó sola, sin una sola palabra de casa, y regresó con los datos guardados a bordo. En la Tierra los recibieron como fantasmas que vuelven: nadie sabía si seguían vivos.', en: 'The antenna was never repaired. The crew worked alone, without a single word from home, and returned with the data stored on board. Earth greeted them like ghosts coming back: nobody knew if they were still alive.' },
   }
   const healthy = m.crew ? m.crew.every((c) => c.health > 60) : true
+  // The rover's rock collection, complete
+  if (level === 'success' && m.explore && m.explore.samples.length >= SAMPLE_GOAL) return {
+    title: { es: 'Final: la bóveda de piedras', en: 'Ending: the vault of stones' },
+    text: { es: `La Astraea volvió con ${m.explore.samples.length} muestras distintas de la superficie. Laboratorios de todo el mundo se pelean por estudiarlas, y una de ellas podría responder la pregunta más grande: ¿estamos solos?`, en: `The Astraea came home with ${m.explore.samples.length} different surface samples. Labs around the world compete to study them, and one of them might answer the biggest question: are we alone?` },
+    lesson: { es: 'Los 382 kg de roca que trajo el programa Apolo se siguen estudiando hoy, más de 50 años después: una buena muestra dura para siempre.', en: 'The 382 kg of rock brought back by Apollo are still being studied today, more than 50 years later: a good sample lasts forever.' },
+  }
   if (level === 'success' && healthy) return {
     title: { es: 'Final: el regreso de la Astraea', en: 'Ending: the Astraea comes home' },
     text: { es: 'Recuperaron la voz de la Tierra, cumplieron la ciencia y volvieron todos de pie. Los datos de la Astraea se convirtieron en la base de la siguiente misión, y su bitácora se lee hoy en las escuelas.', en: 'They got Earth’s voice back, completed the science and everyone came home standing. The Astraea’s data became the foundation of the next mission, and its logbook is now read in schools.' },

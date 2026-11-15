@@ -74,7 +74,9 @@ export function carryTasks(prev, m) {
     const t = (prev && prev[c.id]) || 'science'
     const target = taskTarget(t)
     const done = taskKind(t) === 'repair' && (!target || (m.systems[target] ?? 100) >= 95)
-    tasks[c.id] = c.energy < 15 ? 'rest' : done ? 'science' : t
+    // A rover trip ends at its site: tomorrow it heads for the best next one unless you pick another
+    const drive = taskKind(t) === 'explore' ? 'explore' : t
+    tasks[c.id] = c.energy < 15 ? 'rest' : done ? 'science' : drive
   })
   return tasks
 }

@@ -4,7 +4,7 @@ import { TESTS, partById } from '../data/parts'
 import { summarize, count } from './budget'
 import { SECRET_EVENTS } from '../data/secretEvents'
 import { storyFor } from '../data/story'
-import { SITES, EXPLORE_EVENTS } from '../data/exploration'
+import { SITES, EXPLORE_EVENTS, SAMPLES, QUEST_SITES, QUEST_DAYS, SITE_SCIENCE, SITE_STUCK, LANDING, exploreTarget, distKm } from '../data/exploration'
 import { BROKEN, SYSTEMS, TASKS, taskKind, taskTarget, initialSystems, worstSystem } from './ship'
 
 // Seeded random numbers so a mission can be replayed
@@ -70,7 +70,7 @@ export function startMission(dest, sel, launcherId, tests, commanderId, seed) {
     o2: 100,
     water: 100,
     voiceBack: false,
-    explore: (parts.rover || 0) > 0 && SITES[dest.id] && dest.crewed ? { idx: 0, stuck: 0, route: 0 } : null,
+    explore: (parts.rover || 0) > 0 && SITES[dest.id] && dest.crewed ? { idx: 0, stuck: 0, route: 0, at: -1, pos: LANDING, prevPos: LANDING, visited: [], samples: [], quest: null, questsDone: [] } : null,
     effects: { apathy: false, panic: 0, frustrated: 0, medicBusy: 0, divided: false, halfDays: 0, errorRisk: 0 },
     lastStorm: false,
     over: false,
@@ -95,7 +95,9 @@ export function rollEvent(m, dest, commanderId) {
       if (ev.dests && !ev.dests.includes(dest.id)) continue
       if (ev.needsHeli && !(m.parts.helicopter > 0)) continue
       if (id === 'roverStuck' && m.explore.stuck) continue
-      add(id, 0.05)
+      // Rover missions: one at a time, each at most once
+      if (ev.quest && (m.explore.quest || m.explore.questsDone.includes(id) || m.explore.stuck)) continue
+      add(id, ev.quest ? 0.07 : 0.05)
     }
   }
   // Classified files (fan theories): rare, at most one per mission
@@ -151,7 +153,7 @@ export function nextDay(m0, dest, commanderId, planIn, choice, opts = {}) {
   let plan = planIn
   const r = rng(m0.seed + m0.day * 7919 + 1)
   const st = styleOf(commanderId)
-  const m = { ...m0, parts: { ...m0.parts }, crew: m0.crew && m0.crew.map((c) => ({ ...c })), decisions: [...m0.decisions], systems: m0.systems && { ...m0.systems }, explore: m0.explore && { ...m0.explore } }
+  const m = { ...m0, parts: { ...m0.parts }, crew: m0.crew && m0.crew.map((c) => ({ ...c })), decisions: [...m0.decisions], systems: m0.systems && { ...m0.systems }, explore: m0.explore && { ...m0.explore, visited: [...m0.explore.visited], samples: [...m0.explore.samples], questsDone: [...m0.explore.questsDone], quest: m0.explore.quest && { ...m0.explore.quest } } }
   const tasks = m.crew && m.systems && opts.tasks
   const jobOf = (c) => taskKind(tasks && tasks[c.id])
   const nJob = (k) => (tasks ? m.crew.filter((c) => jobOf(c) === k).length : 0)
@@ -372,6 +374,9 @@ export function nextDay(m0, dest, commanderId, planIn, choice, opts = {}) {
     } else note('warn', 'El archivo se queda cerrado. Nadie a bordo deja de pensar en eso.', 'The file stays closed. Nobody on board stops thinking about it.')
   }
 
+  // A new rock for the collection (returns true if it wasn't there yet)
+  const addSample = (id) => { const x = m.explore; if (!x || !id || x.samples.includes(id)) return false; x.samples.push(id); note('good', `Muestra nueva en la colección: ${SAMPLES[id].name.es}.`, `New sample in the collection: ${SAMPLES[id].name.en}.`); return true }
+
   // 1a'. Surface exploration events
   if (choice && EXPLORE_EVENTS[choice.event] && m.explore) {
     const x = m.explore
@@ -383,7 +388,7 @@ export function nextDay(m0, dest, commanderId, planIn, choice, opts = {}) {
       else { x.stuck = 4; note('bad', 'Las ruedas se hundieron más: el rover quedará parado varios días.', 'The wheels sank deeper: the rover will be stuck for days.') }
     }
     if (ev === 'leopardRock') {
-      if (o === 'core') { m.science += 25; sciFactor *= 0.7; note('good', 'Muestra guardada en un tubo sellado: +25 de ciencia. Algún día volverá a la Tierra.', 'Sample cached in a sealed tube: +25 science. Someday it will come back to Earth.') }
+      if (o === 'core') { m.science += 25; sciFactor *= 0.7; addSample('leopard'); note('good', 'Muestra guardada en un tubo sellado: +25 de ciencia. Algún día volverá a la Tierra.', 'Sample cached in a sealed tube: +25 science. Someday it will come back to Earth.') }
       else { m.science += 8; note('good', 'Fotos de alta resolución de la roca: +8 de ciencia.', 'High-resolution photos of the rock: +8 science.') }
     }
     if (ev === 'scoutFlight') {
@@ -403,9 +408,19 @@ export function nextDay(m0, dest, commanderId, planIn, choice, opts = {}) {
     }
     if (ev === 'lavaTube') {
       if (o === 'probe') {
-        if (r() < 0.6) { m.science += 30; note('good', '¡Imágenes del interior del tubo de lava! Un refugio natural para futuras bases: +30 de ciencia.', 'Images from inside the lava tube! A natural shelter for future bases: +30 science.') }
+        if (r() < 0.6) { m.science += 30; addSample('basalt'); note('good', '¡Imágenes del interior del tubo de lava! Un refugio natural para futuras bases: +30 de ciencia.', 'Images from inside the lava tube! A natural shelter for future bases: +30 science.') }
         else { x.stuck = 999; note('bad', 'El borde cedió y el rover cayó al pozo. Sus últimas fotos son espectaculares.', 'The edge gave way and the rover fell into the pit. Its last photos are spectacular.') }
       } else { m.science += 10; note('good', 'Mapeaste el pozo desde lejos: +10 de ciencia.', 'You mapped the pit from afar: +10 science.') }
+    }
+    // Rover missions: the special site goes on the map with a deadline
+    if (EXPLORE_EVENTS[ev].quest) {
+      x.questsDone.push(ev)
+      const q = QUEST_SITES[ev]
+      if (o === 'go') { x.quest = { id: ev, left: QUEST_DAYS }; note('warn', `Nueva misión del rover: llegar a ${q.es} en ${QUEST_DAYS} días. Está marcada en el mapa.`, `New rover mission: reach the ${q.en.toLowerCase()} within ${QUEST_DAYS} days. It's marked on the map.`) }
+      else if (ev === 'heliLost') {
+        if (r() < 0.4) note('good', 'Contra todo pronóstico, Ingenuity se reconectó solo al día siguiente.', 'Against all odds, Ingenuity reconnected on its own the next day.')
+        else { m.parts.helicopter = 0; note('bad', 'Ingenuity nunca volvió a contestar. Se quedó en silencio en la arena.', 'Ingenuity never answered again. It went silent on the sand.') }
+      } else note('good', 'Lo anotaste para la siguiente misión.', 'You logged it for the next mission.')
     }
   }
 
@@ -465,14 +480,33 @@ export function nextDay(m0, dest, commanderId, planIn, choice, opts = {}) {
         else if (x.stuck >= 900) note('warn', 'El rover se perdió: ya no se puede explorar.', 'The rover is lost: no more exploring.')
         else if (x.stuck > 0) note('warn', `El rover sigue atascado (${x.stuck} día${x.stuck > 1 ? 's' : ''} más).`, `The rover is still stuck (${x.stuck} more day${x.stuck > 1 ? 's' : ''}).`)
         else {
-          const list = SITES[dest.id]
-          const site = list[x.idx % list.length]
-          const gain = Math.round((12 + (x.route > 0 ? 8 : 0) + (m.parts.helicopter > 0 ? 3 : 0)) * eff)
+          // The player chose the site on the logbook map (or the best one is picked)
+          const key = exploreTarget(dest.id, x, tasks[c.id])
+          const quest = key === 'q'
+          const site = quest ? QUEST_SITES[x.quest.id] : SITES[dest.id][key]
+          const from = x.pos || LANDING
+          const km = distKm(from, site.pos)
+          const seen = !quest && x.visited.includes(key)
+          const base = quest ? site.sci : SITE_SCIENCE[site.risk]
+          const gain = Math.round((base * (seen ? 0.4 : 1) + (x.route > 0 ? 8 : 0) + (m.parts.helicopter > 0 ? 3 : 0)) * eff)
           m.science += gain
           x.idx += 1
+          x.prevPos = from
+          x.trail = [...(x.trail || []), site.pos]
+          x.pos = site.pos
+          x.at = key
+          if (!quest && !seen) x.visited.push(key)
           if (x.route > 0) x.route -= 1
-          note('good', `${nameOf(c)} llevó el rover a ${site.es}. ${site.fact.es} (+${gain} ciencia)`, `${nameOf(c)} drove the rover to ${site.en}. ${site.fact.en} (+${gain} science)`)
-          if (r() < (m.parts.helicopter > 0 ? 0.05 : 0.1)) { x.stuck = 3; note('bad', 'De regreso, el rover se atascó en arena suave.', 'On the way back, the rover got stuck in soft sand.') }
+          note('good', `${nameOf(c)} llevó el rover ${km.toFixed(1)} km hasta ${site.es}. ${site.fact.es} (+${gain} ciencia)`, `${nameOf(c)} drove the rover ${km.toFixed(1)} km to the ${site.en}. ${site.fact.en} (+${gain} science)`)
+          addSample(site.sample)
+          if (quest) {
+            if (x.quest.id === 'heliLost') note('good', '¡Ingenuity vuelve a contestar! El rover le sirve de antena y el helicóptero está a salvo.', 'Ingenuity answers again! The rover relays its signal and the helicopter is safe.')
+            else note('good', '¡Misión del rover cumplida!', 'Rover mission accomplished!')
+            crewHit('morale', 8)
+            x.quest = null
+          }
+          // Risky ground and long drives get the rover stuck more often; a scouting helicopter helps
+          if (r() < (SITE_STUCK[site.risk] + km * 0.01) * (m.parts.helicopter > 0 ? 0.5 : 1)) { x.stuck = 3; note('bad', 'En el camino, el rover se atascó en terreno suave.', 'On the way, the rover got stuck in soft ground.') }
         }
       }
       if (k === 'eva') {
@@ -488,6 +522,17 @@ export function nextDay(m0, dest, commanderId, planIn, choice, opts = {}) {
       // In weightlessness bones and muscles weaken without daily exercise (ISS crews train ~2 h a day)
       if (day - (c.lastExercise || 0) > 3) c.health = clamp(c.health - 2)
     })
+
+    // The rover mission's clock
+    const xq = m.explore && m.explore.quest
+    if (xq) {
+      xq.left -= 1
+      if (xq.left <= 0 || m.explore.stuck >= 900) {
+        if (xq.id === 'heliLost') { m.parts.helicopter = 0; note('bad', 'El rover no llegó a tiempo: Ingenuity se quedó sin batería y en silencio.', 'The rover didn’t make it in time: Ingenuity ran out of battery and went silent.') }
+        else note('warn', `Se acabó el tiempo: ${QUEST_SITES[xq.id].es} quedó sin visitar.`, `Time ran out: the ${QUEST_SITES[xq.id].en.toLowerCase()} was never reached.`)
+        m.explore.quest = null
+      }
+    }
 
     // Wear and tear, plus the odd sudden failure
     const ids = Object.keys(sys)

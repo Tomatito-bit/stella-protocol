@@ -92,6 +92,7 @@ export const STRINGS = {
     beforeAstraea: 'Antes de la Astraea',
     fixSent: '{n} va a repararlo',
     viewSurface: 'Superficie', exploreTitle: 'Exploración:', roverOk: 'rover listo', roverStuck: 'rover atascado ({n} días)', roverLost: 'rover perdido', sitesVisited: '{n} sitios visitados', nextSite: 'siguiente', heliOk: 'helicóptero listo',
+    mapPage: 'Mapa de exploración', samplesPage: 'Colección de muestras', newSample: 'muestra nueva', siteSeen: 'ya visitado', questLeft: 'misión: quedan {n} días', mapDriver: '{n} maneja hoy hacia el sitio marcado. Toca otro para cambiar.', mapPick: 'Toca un sitio y {n} sale con el rover hoy.', samplesCount: 'Muestras: {n} de {goal}', samplesGoal: 'Junta {n} muestras distintas para el final especial.', samplesDone: '¡Colección completa! Si cumples la ciencia tendrás el final especial.', sampleEvent: 'solo con evento', drivingTo: 'Rover rumbo a: {n}',
     lang: 'English',
   },
   en: {
@@ -184,6 +185,7 @@ export const STRINGS = {
     beforeAstraea: 'Before the Astraea',
     fixSent: '{n} is on it',
     viewSurface: 'Surface', exploreTitle: 'Exploration:', roverOk: 'rover ready', roverStuck: 'rover stuck ({n} days)', roverLost: 'rover lost', sitesVisited: '{n} sites visited', nextSite: 'next', heliOk: 'helicopter ready',
+    mapPage: 'Exploration map', samplesPage: 'Sample collection', newSample: 'new sample', siteSeen: 'already visited', questLeft: 'mission: {n} days left', mapDriver: '{n} drives to the marked site today. Tap another to change.', mapPick: 'Tap a site and {n} takes the rover out today.', samplesCount: 'Samples: {n} of {goal}', samplesGoal: 'Collect {n} different samples for the special ending.', samplesDone: 'Collection complete! Meet the science goal for the special ending.', sampleEvent: 'event only', drivingTo: 'Rover heading to: {n}',
     lang: 'Español',
   },
 }

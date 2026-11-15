@@ -13,7 +13,7 @@ import { biometrics } from '../logic/mission'
 import { MissionScene } from '../components/MissionScene'
 import { CrewInterior } from '../components/CrewInterior'
 import { SurfaceScene } from '../components/SurfaceScene'
-import { SITES } from '../data/exploration'
+import { SITES, SAMPLES, SAMPLES_FOR, SAMPLE_GOAL, QUEST_SITES, SITE_SCIENCE, LANDING, siteChoices, exploreTarget } from '../data/exploration'
 import { TASKS, SYSTEMS, BROKEN, taskKind, taskTarget, worstSystem, powerLevel } from '../logic/ship'
 
 const PLANS = ['science', 'transmit', 'rest']
@@ -35,7 +35,7 @@ export default function Mission() {
     <section className="mission">
       <div className="mission-view">
         {surface
-          ? <SurfaceScene destId={dest.id} heli={(m.parts.helicopter || 0) > 0} stuck={m.explore.stuck > 0} event={event} paused={journalOpen} />
+          ? <SurfaceScene destId={dest.id} heli={(m.parts.helicopter || 0) > 0} stuck={m.explore.stuck > 0} event={event} paused={journalOpen} pos={m.explore.pos} prevPos={m.explore.prevPos} day={m.day} visited={m.explore.visited} quest={m.explore.quest && m.explore.quest.id} />
           : inside
           ? <CrewInterior crew={m.crew} plan={plan} event={event} destId={dest.id} sel={m.parts} shield={m.shield} tasks={tasks} systems={m.systems} paused={journalOpen} />
           : <MissionScene destId={dest.id} sel={m.parts} crewed={dest.crewed} shield={m.shield} storm={storm} safe={plan === 'rest'} event={event} paused={journalOpen} />}
@@ -203,7 +203,7 @@ function Logbook() {
     return () => { clearTimeout(a); clearTimeout(b) }
   }, [])
   const spreads = m.systems
-    ? [['report', 'crew'], ['supplies', 'event'], ['tasks', 'plan']]
+    ? [['report', 'crew'], ['supplies', 'event'], ...(m.explore ? [['map', 'samples']] : []), ['tasks', 'plan']]
     : m.crew ? [['report', 'crew'], ['event', 'plan']] : [['report', 'supplies'], ['event', 'plan']]
   // A real page turn: the sheet swings over the spiral showing the old page on its front and the new one on its back
   const [flip, setFlip] = useState(null) // { to, dir }
@@ -301,6 +301,8 @@ function LogPage({ kind }) {
   if (kind === 'supplies') return <SuppliesPage />
   if (kind === 'event') return <EventPage />
   if (kind === 'tasks') return <TasksPage />
+  if (kind === 'map') return <MapPage />
+  if (kind === 'samples') return <SamplesPage />
   return <PlanPage />
 }
 
@@ -411,7 +413,7 @@ function CrewPage() {
                 <span className="pulse hand">♥ {biometrics(c, m.day).heart}</span>
               </div>
               {m.systems && tasks && tasks[c.id] && (
-                <div className="photo-task hand"><TaskIcon kind={taskKind(tasks[c.id])} /> {t('taskToday')}: {L(TASKS[taskKind(tasks[c.id])].name).toLowerCase()}{taskTarget(tasks[c.id]) ? ` · ${L(SYSTEMS[taskTarget(tasks[c.id])].name).toLowerCase()}` : ''}</div>
+                <div className="photo-task hand"><TaskIcon kind={taskKind(tasks[c.id])} /> {t('taskToday')}: {L(TASKS[taskKind(tasks[c.id])].name).toLowerCase()}{taskKind(tasks[c.id]) === 'repair' && SYSTEMS[taskTarget(tasks[c.id])] ? ` · ${L(SYSTEMS[taskTarget(tasks[c.id])].name).toLowerCase()}` : ''}</div>
               )}
             </figure>
           )
@@ -474,7 +476,8 @@ function SuppliesPage() {
               <b>{t('exploreTitle')}</b>{' '}
               {m.explore.stuck >= 900 ? t('roverLost') : m.explore.stuck > 0 ? t('roverStuck', { n: m.explore.stuck }) : t('roverOk')}
               {' · '}{t('sitesVisited', { n: m.explore.idx })}
-              {m.explore.stuck < 900 && <> · {t('nextSite')}: {L(SITES[dest.id][m.explore.idx % SITES[dest.id].length])}</>}
+              {' · '}{t('samplesCount', { n: m.explore.samples.length, goal: SAMPLE_GOAL })}
+              {m.explore.quest && <> · <b className="quest-tag">{t('questLeft', { n: m.explore.quest.left })}</b></>}
               {(m.parts.helicopter || 0) > 0 && <> · {t('heliOk')}</>}
             </div>
           )}
@@ -523,6 +526,13 @@ function EventPage() {
   )
 }
 
+// Name of the place the rover is heading to with this task
+function siteName(m, task) {
+  const dest = destinationById[useGame.getState().destinationId]
+  const key = exploreTarget(dest.id, m.explore, task)
+  return key === 'q' ? QUEST_SITES[m.explore.quest.id] : SITES[dest.id][key]
+}
+
 // Who does what today
 function TasksPage() {
   const { t, L } = useT()
@@ -535,7 +545,7 @@ function TasksPage() {
           <div key={c.id} className="task-row">
             <div className="task-who">
               <b className="hand" style={{ color: crewById[c.id].color }}>{crewById[c.id].name.split(' ')[0]}</b>
-              <small className="hand">{L(TASKS[taskKind(tasks && tasks[c.id])].tip)}</small>
+              <small className="hand">{taskKind(tasks && tasks[c.id]) === 'explore' && m.explore && m.explore.stuck === 0 ? t('drivingTo', { n: L(siteName(m, tasks[c.id])) }) : L(TASKS[taskKind(tasks && tasks[c.id])].tip)}</small>
             </div>
             <TaskPicker c={c} />
           </div>
@@ -578,6 +588,124 @@ function TaskPicker({ c }) {
         </div>
       )}
     </div>
+  )
+}
+
+
+const LETTERS = ['A', 'B', 'C', 'D']
+
+// Who drives the rover today: whoever has the job, otherwise the pilot
+const driverOf = (m, tasks) => (m.crew.find((c) => taskKind(tasks && tasks[c.id]) === 'explore') || m.crew.find((c) => c.duty === 'pilot') || m.crew[0])
+
+// Hand-drawn map of the landing region: where the rover has been and where it can go next
+function MapPage() {
+  const { t, L } = useT()
+  const { mission: m, tasks, setTask } = useGame()
+  const dest = destinationById[useGame((s) => s.destinationId)]
+  const x = m.explore
+  const sites = SITES[dest.id]
+  const driver = driverOf(m, tasks)
+  const driving = taskKind(tasks && tasks[driver.id]) === 'explore'
+  const choices = siteChoices(dest.id, x)
+  const target = driving ? exploreTarget(dest.id, x, tasks[driver.id]) : null
+  const go = (key) => { sfx.select(); setTask(driver.id, `explore:${key}`) }
+  const pos = x.pos || LANDING
+  const trail = [LANDING, ...x.trail || []]
+  const q = x.quest && QUEST_SITES[x.quest.id]
+  const blocked = x.stuck > 0
+  return (
+    <>
+      <span className="tiny">{t('mapPage')}</span>
+      <svg className="rover-map" viewBox="0 0 100 100" role="img" aria-label={t('mapPage')}>
+        {/* terrain doodles */}
+        <path d="M5 70 Q25 60 40 66 T75 62 T98 70" className="contour" />
+        <path d="M2 35 Q20 28 38 33 T70 26 T98 32" className="contour" />
+        <ellipse cx="46" cy="20" rx="9" ry="5" className="crater" />
+        <ellipse cx="80" cy="90" rx="7" ry="4" className="crater" />
+        <ellipse cx="12" cy="88" rx="6" ry="3.5" className="crater" />
+        <path d="M90 8 l0 10 M85 13 l10 0" className="compass" /><text x="88.6" y="6" className="map-n">N</text>
+        {/* where the rover has driven */}
+        <polyline points={[...trail, pos].map((p) => p.join(',')).join(' ')} className="trail" />
+        {/* the lander */}
+        <path d={`M${LANDING[0] - 3} ${LANDING[1] + 2.5} L${LANDING[0]} ${LANDING[1] - 3} L${LANDING[0] + 3} ${LANDING[1] + 2.5} Z`} className="lander" />
+        {sites.map((s, i) => {
+          const c = choices.find((k) => k.key === i)
+          const seen = x.visited.includes(i)
+          return (
+            <g key={i} className={`site risk-${s.risk} ${seen ? 'seen' : ''} ${c ? 'choice' : ''} ${target === i ? 'target' : ''}`} onClick={c && !blocked ? () => go(i) : undefined}>
+              <circle cx={s.pos[0]} cy={s.pos[1]} r={c ? 3.2 : 2.2} />
+              {seen && <path d={`M${s.pos[0]} ${s.pos[1]} v-6 l4 1.5 l-4 1.5`} className="flag" />}
+              {target === i && <ellipse cx={s.pos[0]} cy={s.pos[1]} rx="6" ry="5" className="ring" />}
+              {c && <text x={s.pos[0] + 4} y={s.pos[1] + 1.6} className="site-letter">{LETTERS[choices.indexOf(c)]}</text>}
+            </g>
+          )
+        })}
+        {q && (
+          <g className={`site quest ${target === 'q' ? 'target' : ''}`} onClick={!blocked ? () => go('q') : undefined}>
+            <path d={`M${q.pos[0]} ${q.pos[1] - 4} l1.2 2.8 3 .2 -2.3 2 .8 3 -2.7 -1.6 -2.7 1.6 .8 -3 -2.3 -2 3 -.2 Z`} />
+            {target === 'q' && <ellipse cx={q.pos[0]} cy={q.pos[1]} rx="6.5" ry="5.5" className="ring" />}
+            <text x={q.pos[0] + 4.5} y={q.pos[1] + 1.6} className="site-letter">{LETTERS[0]}</text>
+          </g>
+        )}
+        {/* the rover, where it is now */}
+        <g className={`map-rover ${blocked ? 'stuck' : ''}`} transform={`translate(${pos[0]} ${pos[1]})`}>
+          <rect x="-2.6" y="-1.8" width="5.2" height="2.6" rx="0.6" />
+          <circle cx="-1.8" cy="1.4" r="0.9" /><circle cx="0" cy="1.4" r="0.9" /><circle cx="1.8" cy="1.4" r="0.9" />
+        </g>
+      </svg>
+      {x.stuck >= 900 ? <p className="hand map-warn">{t('roverLost')}</p> : blocked && <p className="hand map-warn">{t('roverStuck', { n: x.stuck })}</p>}
+      <ul className="site-list hand">
+        {choices.map((c, n) => (
+          <li key={c.key}>
+            <button className={`site-pick ${target === c.key ? 'on' : ''} ${c.quest ? 'quest' : ''}`} disabled={blocked} onClick={() => go(c.key)}>
+              <span className="box">{target === c.key ? '✓' : ''}</span>
+              <span>
+                <b>{LETTERS[n]}. {L(c.site)}</b> <em className={`risk-word risk-${c.risk}`}>({t(`risk_${c.risk}`).toLowerCase()})</em>
+                <small>
+                  {c.km.toFixed(1)} km · +{c.quest ? c.site.sci : Math.round(SITE_SCIENCE[c.risk] * (c.seen ? 0.4 : 1))} {t('science').toLowerCase()}
+                  {c.site.sample && !x.samples.includes(c.site.sample) ? ` · ${t('newSample')}: ${L(SAMPLES[c.site.sample].name)}` : c.seen ? ` · ${t('siteSeen')}` : ''}
+                  {c.quest ? ` · ${t('questLeft', { n: x.quest.left })}` : ''}
+                </small>
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      <p className="hand muted small-line">{driving ? t('mapDriver', { n: crewById[driver.id].name.split(' ')[0] }) : t('mapPick', { n: crewById[driver.id].name.split(' ')[0] })}</p>
+    </>
+  )
+}
+
+// The rock collection: a jar per sample, filled in as the rover finds them
+function SamplesPage() {
+  const { t, L } = useT()
+  const { mission: m } = useGame()
+  const dest = destinationById[useGame((s) => s.destinationId)]
+  const got = m.explore.samples
+  return (
+    <>
+      <span className="tiny">{t('samplesPage')}</span>
+      <h4>{t('samplesCount', { n: got.length, goal: SAMPLE_GOAL })}</h4>
+      <div className="sample-progress" aria-hidden>{Array.from({ length: SAMPLE_GOAL }, (_, i) => <span key={i} className={i < got.length ? 'on' : ''} />)}</div>
+      <div className="sample-grid">
+        {SAMPLES_FOR[dest.id].map((id) => {
+          const s = SAMPLES[id]
+          const have = got.includes(id)
+          return (
+            <div key={id} className={`sample-jar ${have ? 'have' : ''}`} title={have ? L(s.fact) : ''}>
+              <svg viewBox="0 0 40 44" aria-hidden>
+                <rect x="9" y="3" width="22" height="6" rx="1.5" className="lid" />
+                <path d="M8 10 H32 V38 Q32 41 29 41 H11 Q8 41 8 38 Z" className="glass" />
+                {have ? <path d="M12 38 L15 28 L20 31 L24 25 L28 38 Z" fill={s.color} stroke="#23264a" strokeWidth="1.2" /> : <text x="20" y="31" textAnchor="middle" className="q">?</text>}
+              </svg>
+              <span className="hand">{have ? L(s.name) : s.event ? t('sampleEvent') : '…'}</span>
+            </div>
+          )
+        })}
+      </div>
+      {got.length > 0 && <p className="fact-note"><span className="tape" aria-hidden />{L(SAMPLES[got[got.length - 1]].fact)}</p>}
+      <p className="hand muted small-line">{got.length >= SAMPLE_GOAL ? t('samplesDone') : t('samplesGoal', { n: SAMPLE_GOAL })}</p>
+    </>
   )
 }
 

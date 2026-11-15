@@ -976,3 +976,48 @@ html, body { overflow-x: hidden; }
 .spread-flow .section { margin: 6px 0 0; font-size: 20px; text-decoration: underline wavy rgba(214, 79, 92, 0.5); text-underline-offset: 4px; }
 .spread-flow { font-family: var(--hand); }
 .spread-flow .tiny, .spread-flow .hand-option small, .spread-flow .fact-note { font-family: 'Space Grotesk', sans-serif; }
+
+/* ---------- Rover map and sample collection ---------- */
+.rover-map { width: 100%; max-height: 210px; display: block; margin: 2px 0 4px; background: radial-gradient(ellipse at 50% 50%, rgba(214, 160, 110, 0.18), transparent 70%); border: 1.5px dashed rgba(35, 38, 74, 0.25); border-radius: 8px; }
+.rover-map .contour { fill: none; stroke: rgba(35, 38, 74, 0.22); stroke-width: 0.6; }
+.rover-map .crater { fill: rgba(35, 38, 74, 0.06); stroke: rgba(35, 38, 74, 0.3); stroke-width: 0.5; }
+.rover-map .compass { stroke: #23264a; stroke-width: 0.6; }
+.rover-map .map-n { font: 700 4px 'Caveat', cursive; fill: #23264a; }
+.rover-map .trail { fill: none; stroke: #d64f5c; stroke-width: 0.9; stroke-dasharray: 1.6 1.4; stroke-linecap: round; }
+.rover-map .lander { fill: #fffdf3; stroke: #23264a; stroke-width: 0.7; }
+.rover-map .site circle { fill: #fffdf3; stroke: #23264a; stroke-width: 0.7; }
+.rover-map .site.risk-safe circle { fill: #c9ecd2; } .rover-map .site.risk-medium circle { fill: #ffe39a; } .rover-map .site.risk-risky circle { fill: #f6b0a8; }
+.rover-map .site.seen circle { opacity: 0.55; }
+.rover-map .site.choice { cursor: pointer; }
+.rover-map .site.choice circle { stroke-width: 1; }
+.rover-map .flag { fill: #d64f5c; stroke: #23264a; stroke-width: 0.5; }
+.rover-map .ring { fill: none; stroke: #d64f5c; stroke-width: 1.1; }
+.rover-map .site.quest { cursor: pointer; }
+.rover-map .site.quest path { fill: #ffd166; stroke: #23264a; stroke-width: 0.6; animation: quest-pulse 1.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes quest-pulse { 50% { transform: scale(1.18); } }
+.rover-map .map-rover rect { fill: #e9ecf2; stroke: #23264a; stroke-width: 0.6; }
+.rover-map .map-rover circle { fill: #23264a; }
+.rover-map .map-rover.stuck { animation: rover-shake 0.25s linear infinite; }
+@keyframes rover-shake { 50% { transform: translateX(0.4px); } }
+.map-warn { color: #b8323f; margin: 0 0 4px; }
+.site-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
+.site-pick { display: flex; gap: 8px; align-items: flex-start; width: 100%; text-align: left; background: none; border: 0; padding: 3px 2px; cursor: pointer; color: var(--ink); font: inherit; }
+.site-pick:disabled { opacity: 0.45; cursor: default; }
+.site-pick .box { flex: none; width: 16px; height: 16px; border: 1.5px solid #23264a; border-radius: 3px; display: grid; place-items: center; color: #d64f5c; font-weight: 700; margin-top: 2px; }
+.site-pick small { display: block; color: #5b5f86; font-size: 13px; line-height: 1.15; }
+.site-pick.quest b { color: #b36b00; }
+.site-pick.on b { text-decoration: underline wavy rgba(214, 79, 92, 0.7); }
+.quest-tag { color: #b36b00; }
+.sample-progress { display: flex; gap: 4px; margin: -2px 0 6px; }
+.sample-progress span { flex: 1; height: 6px; border-radius: 3px; border: 1px solid rgba(35, 38, 74, 0.35); }
+.sample-progress span.on { background: #d64f5c; border-color: #d64f5c; }
+.sample-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px 6px; }
+.sample-jar { display: grid; justify-items: center; text-align: center; }
+.sample-jar svg { width: 34px; height: 38px; }
+.sample-jar .lid { fill: #c6c9d8; stroke: #23264a; stroke-width: 1.2; }
+.sample-jar .glass { fill: rgba(255, 255, 255, 0.5); stroke: #23264a; stroke-width: 1.2; stroke-dasharray: 3 2; }
+.sample-jar.have .glass { stroke-dasharray: none; fill: rgba(220, 236, 255, 0.55); }
+.sample-jar .q { font: 700 14px 'Caveat', cursive; fill: rgba(35, 38, 74, 0.4); }
+.sample-jar span { font-size: 12.5px; line-height: 1.05; color: var(--ink); }
+.sample-jar:not(.have) span { color: rgba(35, 38, 74, 0.45); }
+.rover-map .site-letter { font: 700 5px 'Caveat', cursive; fill: #23264a; pointer-events: none; }

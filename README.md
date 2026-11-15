@@ -46,6 +46,7 @@ These are the same ideas NASA uses, and losing a mission teaches the real lesson
 **Highlights**
 - **Real data and real stories.** Each event cites what really happened: Apollo 13's improvised CO₂ filter, Spirit stuck in Martian sand (2009), Perseverance's "Cheyava Falls" rock (2024), Ingenuity's 72 flights, LRO's lunar pits and the first ISS medical evacuation (2026).
 - **"Classified files".** These rare events are built on popular myths about what NASA hides: the Face on Mars, the Black Knight satellite and the Wow! signal. Investigating one reveals the scientific explanation.
+- **Surface exploration.** On a hand-drawn logbook map you pick where the rover drives: each real site has its distance, risk and reward. You collect rock samples (clay, olivine, sulfur, water ice…), each with the real discovery behind it, and you can complete the collection for a special ending. Events can open time-limited rover missions, such as a meteorite spotted from orbit, a methane spike or a silent Ingenuity.
 - **Everything is visible.** The 3D ship interior shows the crew walking to their jobs. Failures flash red, events play out live in orbit or on the surface, and the rover drives across real-named sites.
 - **Accessible.** It runs in a browser, adapts graphics quality to the device, works in English and Spanish, and includes a 4-card tutorial.
 

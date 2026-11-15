@@ -27,6 +27,8 @@ export function loadDemo() {
     let m = startMission(d, base.selection, base.launcherId, base.tests, base.commanderId, 4242)
     const days = screen === 'legacy' ? m.totalDays : q.has('day0') ? 0 : 3
     for (let i = 0; i < days && !m.over; i++) m = nextDay(m, d, base.commanderId, 'science', null, { tasks: m.crew ? defaultTasks(m) : null })
+    // ?quest=brightSpot opens a rover mission on the map
+    if (q.get('quest') && m.explore) m = { ...m, explore: { ...m.explore, quest: { id: q.get('quest'), left: 3 } } }
     const tasks = m.crew ? defaultTasks(m) : null
     if (tasks && q.get('plan') === 'rest') Object.keys(tasks).forEach((k) => { tasks[k] = 'rest' })
     useGame.setState({ ...base, screen, mission: m, tasks, ration: false, event: q.get('event'), journalOpen: q.has('logbook'), live: q.has('live') ? q.get('event') : null, view: q.has('surface') ? 'surface' : q.has('inside') ? 'crew' : 'ship', plan: q.get('plan') || 'science' })

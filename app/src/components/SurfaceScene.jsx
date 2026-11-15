@@ -3,21 +3,19 @@ import { useFrame } from '@react-three/fiber'
 import { Stars, useGLTF, useTexture } from '@react-three/drei'
 import * as THREE from 'three'
 import { GameCanvas } from './GameCanvas'
+import { SITES, QUEST_SITES, LANDING } from '../data/exploration'
 
 // Surface view: the planet's ground with the exploration vehicles (official NASA 3D models,
 // lightened in Blender): Perseverance-style rover, Ingenuity helicopter, Apollo lander on the Moon.
 
 const MAPS = { moon: '/textures/moon.jpg', mars: '/textures/mars.jpg' }
 const SKY = { mars: '#c99a76', moon: '#03040a' }
-const LOOP = 13 // radius of the rover's drive loop (m)
+// Map units (0–100, lander at 50,50) to metres on the ground
+const toWorld = (p) => [((p || LANDING)[0] - 50) * 0.5, ((p || LANDING)[1] - 50) * 0.5]
 
 // Smooth rolling hills (deterministic, so the rover can sit exactly on the ground)
 const hill = (x, z) => Math.sin(x * 0.11) * Math.cos(z * 0.09) * 1.4 + Math.sin(x * 0.27 + z * 0.19) * 0.45 + Math.cos(z * 0.33 - x * 0.07) * 0.3
-const groundY = (x, z) => {
-  const r = Math.hypot(x, z / 0.65)
-  const road = Math.exp(-((r - LOOP) ** 2) / 10) // the rover's track is a little flatter
-  return hill(x, z) * (1 - 0.6 * road)
-}
+const groundY = (x, z) => hill(x, z) * 0.8
 
 function Ground({ destId }) {
   const map = useTexture(MAPS[destId], (t) => {
@@ -36,27 +34,60 @@ function Ground({ destId }) {
   return <mesh geometry={geo}><meshStandardMaterial map={map} roughness={1} color={destId === 'mars' ? '#e3b08a' : '#b9b9b9'} /></mesh>
 }
 
-function Rover({ stuck, slow, onPose }) {
+// The rover drives the day's leg, from the last site to the one the player chose on the map, then parks
+function Rover({ stuck, slow, from, to, onPose }) {
   const { scene } = useGLTF('/models/rover.glb')
   const model = useMemo(() => scene.clone(true), [scene])
   const ref = useRef()
-  const a = useRef(0)
+  const u = useRef(0)
+  const heading = useRef(null)
+  const [ax, az] = toWorld(from)
+  const [bx, bz] = toWorld(to)
+  const len = Math.hypot(bx - ax, bz - az)
+  const secs = Math.min(16, Math.max(6, len / 1.4)) * (slow ? 2 : 1)
   useFrame((_, dt) => {
     const g = ref.current
     if (!g) return
-    if (!stuck) a.current += dt * (slow ? 0.025 : 0.07)
-    const t = a.current
-    const x = Math.cos(t) * LOOP
-    const z = Math.sin(t) * LOOP * 0.65
-    const nx = Math.cos(t + 0.05) * LOOP
-    const nz = Math.sin(t + 0.05) * LOOP * 0.65
+    const moving = len > 0.5 && u.current < 1
+    if (moving && !stuck) u.current = Math.min(1, u.current + dt / secs)
+    // ease in and out so it pulls away and brakes like a heavy vehicle
+    const k = u.current * u.current * (3 - 2 * u.current)
+    const x = ax + (bx - ax) * k
+    const z = az + (bz - az) * k
     g.position.set(x, groundY(x, z) + (stuck ? -0.25 : 0), z)
-    g.rotation.y = Math.atan2(nx - x, nz - z)
-    // a little bounce over the rocks, or a helpless shake when stuck
-    g.rotation.z = stuck ? Math.sin(performance.now() / 90) * 0.02 : Math.sin(t * 40) * 0.01
+    if (heading.current == null) heading.current = len > 0.5 ? Math.atan2(bx - ax, bz - az) : 0.6
+    if (len > 0.5) heading.current = Math.atan2(bx - ax, bz - az)
+    g.rotation.y = heading.current
+    // a little bounce over the rocks while driving, or a helpless shake when stuck
+    g.rotation.z = stuck ? Math.sin(performance.now() / 90) * 0.02 : moving ? Math.sin(performance.now() / 70) * 0.012 : 0
     if (onPose) onPose(g.position)
   })
   return <group ref={ref}><primitive object={model} /></group>
+}
+
+// Small flags where the rover has been, cairns where it could go, and a light beam over the rover mission's site
+function SiteMarks({ destId, visited, quest }) {
+  const beam = useRef()
+  useFrame(({ clock }) => { if (beam.current) beam.current.material.opacity = 0.35 + Math.sin(clock.getElapsedTime() * 3) * 0.15 })
+  const q = quest && QUEST_SITES[quest]
+  return (
+    <group>
+      {(SITES[destId] || []).map((s, i) => {
+        const [x, z] = toWorld(s.pos)
+        const y = groundY(x, z)
+        return visited.includes(i)
+          ? <group key={i} position={[x + 1.5, y, z]}>
+              <mesh position={[0, 0.9, 0]}><cylinderGeometry args={[0.04, 0.04, 1.8, 6]} /><meshStandardMaterial color="#ddd" /></mesh>
+              <mesh position={[0.3, 1.55, 0]}><boxGeometry args={[0.6, 0.35, 0.02]} /><meshStandardMaterial color="#d64f5c" /></mesh>
+            </group>
+          : <mesh key={i} position={[x, y + 0.25, z]}><dodecahedronGeometry args={[0.5, 0]} /><meshStandardMaterial color={destId === 'mars' ? '#8a4a32' : '#777'} flatShading roughness={1} /></mesh>
+      })}
+      {q && (() => {
+        const [x, z] = toWorld(q.pos)
+        return <mesh ref={beam} position={[x, groundY(x, z) + 15, z]}><cylinderGeometry args={[0.5, 0.9, 30, 16, 1, true]} /><meshBasicMaterial color="#ffd166" transparent opacity={0.4} depthWrite={false} toneMapped={false} /></mesh>
+      })()}
+    </group>
+  )
 }
 
 // Ingenuity flies figure-eights above the rover, rotors spinning in opposite directions
@@ -138,7 +169,7 @@ function Follow({ target }) {
   return null
 }
 
-export const SurfaceScene = memo(function SurfaceScene({ destId, heli, stuck, event, paused }) {
+export const SurfaceScene = memo(function SurfaceScene({ destId, heli, stuck, event, paused, pos, prevPos, day, visited = [], quest }) {
   const pose = useRef(null)
   const setPose = (p) => { pose.current = p }
   const mars = destId === 'mars'
@@ -152,10 +183,11 @@ export const SurfaceScene = memo(function SurfaceScene({ destId, heli, stuck, ev
       <directionalLight position={mars ? [20, 25, 10] : [30, 10, -10]} intensity={mars ? 2.2 : 3} color={mars ? '#ffd8b0' : '#ffffff'} />
       <Suspense fallback={null}>
         <Ground destId={destId} />
-        <Rover stuck={stuck} slow={event === 'regolithJam'} onPose={setPose} />
+        <Rover key={day} stuck={stuck} slow={event === 'regolithJam'} from={prevPos} to={pos} onPose={setPose} />
         {mars && heli && <Helicopter target={pose} />}
         {!mars && <Lander />}
       </Suspense>
+      <SiteMarks destId={destId} visited={visited} quest={quest} />
       <Dust target={pose} stuck={stuck || storm} color={mars ? '#d79a6a' : '#9a9a9a'} />
       {event === 'leopardRock' && <Marker target={pose} color="#ffd166" />}
       {event === 'lavaTube' && <Marker target={pose} color="#5ad1ff" pit />}

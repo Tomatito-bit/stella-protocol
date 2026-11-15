@@ -18,6 +18,7 @@ import { useGame } from '../src/store.js'
 import * as THREE from 'three'
 import { route, regionOf } from '../src/logic/deckRoute.js'
 import { ROOM_SLOTS } from '../src/logic/crewPlaces.js'
+import { SITES, SAMPLES, SAMPLES_FOR, SAMPLE_GOAL, QUEST_SITES, QUEST_EVENTS, siteChoices, exploreTarget } from '../src/data/exploration.js'
 
 let fails = 0
 let checks = 0
@@ -171,6 +172,84 @@ section('Caminatas en la nave: siempre por las puertas')
     if (path.length > 2) for (const c of spots.slice(0, 6)) walk(path[0].clone().lerp(path[1], 0.5), c, [0, 0])
   }
   console.log(`  ${walks} caminatas, ${crossings} cruces de puerta revisados`)
+}
+
+// ---------- 6c. Rover: map choices, samples, rover missions ----------
+section('Rover: mapa, muestras y misiones por evento')
+for (const [dest, list] of Object.entries(SITES)) {
+  list.forEach((st, i) => {
+    ok(Array.isArray(st.pos) && st.pos.every((v) => v >= 5 && v <= 95), `${dest}/${i}: sitio dentro del mapa`)
+    ok(['safe', 'medium', 'risky'].includes(st.risk), `${dest}/${i}: riesgo del sitio`)
+    ok(SAMPLES[st.sample] && SAMPLES_FOR[dest].includes(st.sample), `${dest}/${i}: muestra del sitio existe`)
+  })
+  ok(SAMPLES_FOR[dest].length >= SAMPLE_GOAL, `${dest}: hay suficientes muestras para completar la colección`)
+}
+for (const [id, smp] of Object.entries(SAMPLES)) ok(both(smp.name) && both(smp.fact) && /^#[0-9a-f]{6}$/.test(smp.color), `muestra ${id}: nombre, dato y color`)
+for (const [id, q] of Object.entries(QUEST_SITES)) {
+  ok(QUEST_EVENTS[id] && both(q) && both(q.fact) && q.sci > 0, `misión ${id}: sitio con textos y ciencia`)
+  if (q.sample) ok(SAMPLES_FOR[QUEST_EVENTS[id].dests[0]].includes(q.sample), `misión ${id}: su muestra pertenece al destino`)
+}
+{
+  const d = DESTINATIONS.find((x) => x.id === 'mars')
+  const r = RECOMMENDED.mars
+  const base = startMission(d, r.parts, r.launcher, ['vacuum', 'vibration'], 'kwame', 42)
+  ok(base.explore && base.explore.at === -1 && base.explore.samples.length === 0, 'el rover empieza junto al módulo, sin muestras')
+  const ch = siteChoices('mars', base.explore)
+  ok(ch.length === 3 && ch.every((c) => c.km > 0), 'el mapa ofrece 3 sitios con distancia')
+  // The player's pick is respected: drive to the farthest choice
+  const far = ch[ch.length - 1].key
+  const driver = base.crew.find((c) => c.duty === 'pilot')
+  const tasks = { ...defaultTasks(base), [driver.id]: `explore:${far}` }
+  ok(exploreTarget('mars', base.explore, tasks[driver.id]) === far, 'el destino elegido es el que se usa')
+  const m1 = nextDay(base, d, 'kwame', 'science', null, { tasks })
+  ok(m1.explore.at === far && m1.explore.visited.includes(far), 'el rover llega al sitio elegido')
+  ok(m1.explore.samples.includes(SITES.mars[far].sample), 'y guarda la muestra de ese sitio')
+  ok(base.explore.visited.length === 0 && base.explore.samples.length === 0, 'el día anterior no se modifica (sin efectos secundarios)')
+  ok(m1.journal[m1.journal.length - 1].entries.some((e) => /km/.test(e.text.es)), 'la bitácora dice cuántos km manejó')
+  // A visited site is not offered again while new ones remain
+  ok(!siteChoices('mars', m1.explore).some((c) => c.key === far), 'el sitio visitado no se vuelve a ofrecer')
+  // Rover mission: accept it, it shows on the map, and driving there completes it
+  const m2 = nextDay(m1, d, 'kwame', 'science', { event: 'brightSpot', option: 'go', risk: 'medium' }, { tasks: defaultTasks(m1) })
+  ok(m2.explore.questsDone.includes('brightSpot'), 'la misión del rover queda registrada')
+  const open = m2.explore.quest
+  if (open) {
+    ok(siteChoices('mars', m2.explore)[0].key === 'q', 'la misión aparece primero en el mapa')
+    const t2 = { ...defaultTasks(m2), [driver.id]: 'explore:q' }
+    const m3 = nextDay({ ...m2, explore: { ...m2.explore, stuck: 0 } }, d, 'kwame', 'science', null, { tasks: t2 })
+    ok(!m3.explore.quest && m3.explore.samples.includes('meteorite'), 'llegar al sitio cumple la misión y da el meteorito')
+  } else ok(m2.explore.samples.includes('meteorite'), 'la misión se cumplió el mismo día')
+  // Deadline: ignore it and it expires
+  let mx = nextDay(m1, d, 'kwame', 'science', { event: 'methaneSpike', option: 'go', risk: 'medium' }, { tasks: { ...defaultTasks(m1), [driver.id]: 'science' } })
+  for (let k = 0; k < 4 && mx.explore.quest; k++) mx = nextDay(mx, d, 'kwame', 'science', null, { tasks: { ...defaultTasks(mx), [driver.id]: 'science' } })
+  ok(!mx.explore.quest && !mx.explore.samples.includes('air'), 'si no vas, la misión caduca a los 3 días')
+  // Rover missions never repeat and only one is open at a time
+  let seen = 0
+  for (let day = 2; day < 40; day++) { const e = rollEvent({ ...m2, day }, d, 'kwame'); if (e === 'brightSpot' || (m2.explore.quest && QUEST_EVENTS[e])) seen++ }
+  ok(seen === 0, 'una misión del rover a la vez y nunca repetida')
+  // Special ending for a full collection
+  const full = { ...m1, explore: { ...m1.explore, samples: SAMPLES_FOR.mars.slice(0, SAMPLE_GOAL) }, voiceBack: true, science: m1.goal * 1.2 }
+  ok(/piedras/.test(endingOf(full, 'success').title.es), 'colección completa + éxito = final especial')
+}
+// Over the big simulation, rover days must keep finding samples
+{
+  let samples = 0, runs = 0
+  for (const dest of ['mars', 'moon']) for (let i = 0; i < 100; i++) {
+    const d = DESTINATIONS.find((x) => x.id === dest)
+    const r = RECOMMENDED[dest]
+    let m = startMission(d, r.parts, r.launcher, ['vacuum', 'vibration'], 'kwame', i * 97 + 3)
+    let tasks = defaultTasks(m)
+    for (let g = 0; g < 60 && !m.over; g++) {
+      const ev = rollEvent(m, d, 'kwame')
+      const o = ev && (EVENTS[ev].options.find((x) => x.risk === 'safe') || EVENTS[ev].options[0])
+      m = nextDay(m, d, 'kwame', 'science', ev ? { event: ev, option: o.id, risk: o.risk } : null, { tasks })
+      if (m.crew) tasks = carryTasks(defaultTasks(m), m)
+    }
+    samples += m.explore.samples.length; runs++
+    ok(m.explore.samples.every((id) => SAMPLES_FOR[dest].includes(id)), `${dest}: solo muestras del destino`)
+    ok(new Set(m.explore.samples).size === m.explore.samples.length, `${dest}: sin muestras repetidas`)
+  }
+  console.log(`  muestras por misión (promedio): ${(samples / runs).toFixed(1)}`)
+  ok(samples / runs >= 2, 'el rover junta muestras en una misión normal')
 }
 
 // ---------- 7. The real game loop through the store, every destination ----------
