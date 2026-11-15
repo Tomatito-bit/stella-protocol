@@ -698,3 +698,41 @@ h2 { font-size: 26px; }
 @keyframes live-in { from { opacity: 0; transform: translate(-50%, -20px) scale(0.96); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
 .live-alert { top: 150px; left: 16px; transform: none; width: min(400px, calc(100% - 32px)); animation-name: live-in-left; }
 @keyframes live-in-left { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: none; } }
+
+/* ---------- Logbook pictures: crew photos and supply doodles ---------- */
+.crew-photos { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 18px; margin-top: 8px; }
+.crew-photo { position: relative; margin: 0; padding: 8px 8px 6px; background: #fffdf6; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.18); transform: rotate(var(--tilt)); }
+.crew-photo .tape { position: absolute; top: -9px; left: 50%; width: 54px; height: 16px; margin-left: -27px; background: rgba(255, 236, 140, 0.7); transform: rotate(-3deg); }
+.crew-photo .photo { position: relative; height: 112px; background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--accent) 25%, #f2ead6), #e2d6bb) ; background-size: cover; background-position: center top; border: 1px solid rgba(35, 38, 74, 0.15); }
+.crew-photo .photo { background-image: none; }
+.crew-photo .photo[style] { background-size: contain, cover; background-repeat: no-repeat; background-color: color-mix(in srgb, var(--accent) 22%, #f2ead6); }
+.crew-photo figcaption { font-size: 22px; line-height: 1; margin: 4px 0 0; color: var(--accent); }
+.crew-photo p { margin: 2px 0 0; font-size: 17px; line-height: 1.1; }
+.crew-photo small { font-size: 15px; }
+.crew-photo .sore { color: #b0283a; }
+.crew-photo.hurt .photo { filter: saturate(0.8); }
+.crew-photo.critical .photo { filter: grayscale(1) contrast(0.9); }
+.crew-photo.critical::after { content: '!'; position: absolute; top: 6px; right: 10px; width: 24px; height: 24px; border-radius: 50%; background: #d64f5c; color: #fff; font-weight: 800; display: grid; place-items: center; }
+.bandage { position: absolute; right: 18%; top: 22%; width: 34px; height: 12px; background: #f6e3c8; border: 1px solid #b89a72; border-radius: 3px; transform: rotate(-30deg); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4); }
+.bandage::after { content: ''; position: absolute; inset: 0; transform: rotate(60deg); background: inherit; border: inherit; border-radius: inherit; }
+.zzz { position: absolute; right: 6px; top: 4px; font-family: var(--hand); font-size: 22px; color: #3b4b9a; transform: rotate(-12deg); animation: zzz 2s ease-in-out infinite; }
+@keyframes zzz { 50% { transform: rotate(-12deg) translateY(-4px); opacity: 0.6; } }
+.shelf { margin: 8px 0 10px; }
+.shelf.two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.shelf-head { display: flex; gap: 8px; align-items: baseline; font-size: 20px; }
+.shelf-head .low { color: #b0283a; }
+.shelf-items { display: flex; flex-wrap: wrap; gap: 4px; align-items: flex-end; min-height: 38px; padding-bottom: 4px; border-bottom: 2px solid rgba(35, 38, 74, 0.55); border-radius: 0 0 2px 2px; }
+.doodle.food { width: 24px; height: 31px; }
+.doodle.crate { width: 32px; height: 28px; }
+.doodle.fuel { width: 22px; height: 32px; }
+.doodle.empty { width: 26px; height: 26px; }
+.doodle.level { width: 38px; height: 66px; }
+.more { font-size: 20px; margin-left: 4px; }
+.gauges-row { display: flex; justify-content: space-around; gap: 10px; margin: 6px 0 8px; }
+.gauge-doodle { display: grid; justify-items: center; gap: 2px; }
+.gauge-doodle .hand { font-size: 18px; }
+.gauge-doodle.low .hand { color: #b0283a; }
+.small-line { font-size: 17px; margin: 2px 0 4px; }
+.crew-photo .photo[style] { background-size: 165% auto; background-position: 50% 8%; }
+.crew-photo .photo[style] { background-size: auto 150%; background-position: 50% 6%; }
+.crew-photo .photo { height: 150px; }

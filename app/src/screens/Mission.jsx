@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { startHum, stopHum, sfx } from '../sound'
 import { TUTORIAL } from '../data/tutorial'
+import { FoodPack, LevelDoodle, SpareCrate, FuelTank, Empty } from '../components/Doodles'
 import { useGame } from '../store'
 import { useT } from '../i18n'
 import { destinationById } from '../data/destinations'
@@ -367,7 +368,7 @@ function ReportPage() {
   )
 }
 
-// How each person is doing, in words (with a little helmet badge in their colour)
+// The crew, as taped photos (rendered in Blender) that change with how each person is doing
 function CrewPage() {
   const { t, L } = useT()
   const { mission: m, tasks } = useGame()
@@ -375,22 +376,26 @@ function CrewPage() {
   return (
     <>
       <span className="tiny">{t('crewPage')}</span>
-      <div className="crew-notes">
-        {m.crew.map((c) => {
+      <div className="crew-photos">
+        {m.crew.map((c, i) => {
           const info = crewById[c.id]
+          const first = info.name.split(' ')[0]
           const sore = m.systems && m.day - (c.lastExercise || 0) > 3
+          const state = [c.health <= 33 && 'critical', c.health <= 66 && 'hurt', c.energy <= 33 && 'sleepy', c.morale <= 33 && 'sad'].filter(Boolean).join(' ')
           return (
-            <div key={c.id} className="crew-note" style={{ '--accent': info.color }}>
-              <span className="helmet-badge" aria-hidden><i /></span>
-              <div>
-                <b className="hand">{info.name.split(' ')[0]}{c.commander ? ' ★' : ''}</b> <small className="muted">{L(info.role)}</small>
-                <p className="hand">
-                  {word(c.health, t('w_healthy'), t('w_hurt'), t('w_critical'))}, {word(c.energy, t('w_rested'), t('w_tired'), t('w_exhausted'))}, {word(c.morale, t('w_upbeat'), t('w_calm'), t('w_down'))}.
-                  {sore && <> {t('w_sore')}</>}
-                </p>
-                {tasks && tasks[c.id] && <small className="hand muted">{t('taskToday')}: {L(TASKS[taskKind(tasks[c.id])].name).toLowerCase()}</small>}
+            <figure key={c.id} className={`crew-photo ${state}`} style={{ '--accent': info.color, '--tilt': `${(i % 2 ? 1 : -1) * (1.5 + (i % 3))}deg` }}>
+              <span className="tape" aria-hidden />
+              <div className="photo" style={{ backgroundImage: `url(/portraits/${first.toLowerCase()}.png)` }}>
+                {c.health <= 66 && <span className="bandage" aria-hidden />}
+                {c.energy <= 33 && <span className="zzz" aria-hidden>Zzz</span>}
               </div>
-            </div>
+              <figcaption className="hand"><b>{first}{c.commander ? ' ★' : ''}</b></figcaption>
+              <p className="hand">
+                {word(c.health, t('w_healthy'), t('w_hurt'), t('w_critical'))}, {word(c.energy, t('w_rested'), t('w_tired'), t('w_exhausted'))}, {word(c.morale, t('w_upbeat'), t('w_calm'), t('w_down'))}.
+                {sore && <span className="sore"> {t('w_sore')}</span>}
+              </p>
+              {tasks && tasks[c.id] && <small className="hand muted">{t('taskToday')}: {L(TASKS[taskKind(tasks[c.id])].name).toLowerCase()}</small>}
+            </figure>
           )
         })}
       </div>
@@ -398,33 +403,39 @@ function CrewPage() {
   )
 }
 
-// Inventory and ship state, like a supply checklist
+// Inventory drawn like a supply shelf: ration packs, bottles, tanks, crates
 function SuppliesPage() {
   const { t, L } = useT()
-  const { mission: m } = useGame()
+  const { mission: m, ration } = useGame()
   const dest = destinationById[useGame((s) => s.destinationId)]
-  const rows = [
-    m.systems && ['O₂', `${Math.round(m.o2)}%`, m.o2 < 30],
-    m.systems && [t('water'), `${Math.round(m.water)}%`, m.water < 30],
-    m.crew && [t('supplies'), `${Math.floor(m.supplies)} ${t('daysShort')}`, m.supplies < 3, Math.max(0, Math.floor(m.supplies))],
-    m.systems && [t('powerHud'), `${Math.round(powerLevel(m, dest) * 100)}%`, powerLevel(m, dest) < 0.7],
-    [t('sparesShort'), m.spares, m.spares === 0, m.spares],
-    [t('fuel'), m.spareTanks, m.spareTanks === 0, m.spareTanks],
-    [t('electronics'), `${Math.round(m.electronics)}%`, m.electronics < 50],
-    [t('dose'), `${m.dose.toFixed(1)} mSv`, m.dose > 20],
-  ].filter(Boolean)
+  const food = m.crew ? Math.max(0, Math.floor(m.supplies)) : null
+  const power = Math.round(powerLevel(m, dest) * 100)
+  const many = (n, max, Item) => (n > 0 ? Array.from({ length: Math.min(n, max) }, (_, i) => <Item key={i} i={i} />) : <Empty />)
   return (
     <>
       <span className="tiny">{t('suppliesPage')}</span>
-      <ul className="hand inventory">
-        {rows.map(([k, v, low, ticks]) => (
-          <li key={k} className={low ? 'low' : ''}>
-            <span>{k}</span>
-            {ticks != null && <span className="ticks" aria-hidden>{Array.from({ length: Math.min(ticks, 16) }, (_, i) => <i key={i} />)}</span>}
-            <b>{v}</b>
-          </li>
-        ))}
-      </ul>
+      {food != null && (
+        <div className="shelf">
+          <div className="shelf-head hand"><b>{t('supplies')}</b> <span className={food < 3 ? 'low' : ''}>{food} {t('daysShort')}{ration ? ` · ${t('rationShort')}` : ''}</span></div>
+          <div className="shelf-items">{many(food, 16, FoodPack)}{food > 16 && <span className="hand more">+{food - 16}</span>}</div>
+        </div>
+      )}
+      <div className="gauges-row">
+        {m.systems && <div className={`gauge-doodle ${m.water < 30 ? 'low' : ''}`}><LevelDoodle kind="water" level={m.water} /><span className="hand">{t('water')} {Math.round(m.water)}%</span></div>}
+        {m.systems && <div className={`gauge-doodle ${m.o2 < 30 ? 'low' : ''}`}><LevelDoodle kind="o2" level={m.o2} /><span className="hand">O₂ {Math.round(m.o2)}%</span></div>}
+        <div className={`gauge-doodle ${power < 70 ? 'low' : ''}`}><LevelDoodle kind="power" level={power} /><span className="hand">{t('powerHud')} {power}%</span></div>
+      </div>
+      <div className="shelf two">
+        <div>
+          <div className="shelf-head hand"><b>{t('sparesShort')}</b> <span className={m.spares === 0 ? 'low' : ''}>{m.spares}</span></div>
+          <div className="shelf-items">{many(m.spares, 8, SpareCrate)}</div>
+        </div>
+        <div>
+          <div className="shelf-head hand"><b>{t('fuel')}</b> <span className={m.spareTanks === 0 ? 'low' : ''}>{m.spareTanks}</span></div>
+          <div className="shelf-items">{many(m.spareTanks, 8, FuelTank)}</div>
+        </div>
+      </div>
+      <p className="hand muted small-line">{t('electronics')} {Math.round(m.electronics)}% · {t('dose')} {m.dose.toFixed(1)} mSv</p>
       {m.systems && (
         <>
           <h4>{t('systemsHud')}</h4>
