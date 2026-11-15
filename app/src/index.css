@@ -947,3 +947,6 @@ html, body { overflow-x: hidden; }
 .closed-logbook { left: auto !important; right: 22px; transform: rotate(5deg); }
 .closed-logbook .cover-hint { left: auto; right: 0; text-align: right; }
 @media (max-width: 900px) { .closed-logbook { right: 12px; } .stickers { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+.stickers { grid-template-columns: repeat(var(--n, 8), minmax(0, 1fr)); }
+.explore-note { font-size: 18px; margin: 6px 0; padding: 6px 10px; background: rgba(214, 154, 106, 0.15); border-left: 3px solid #c9743a; line-height: 1.25; break-inside: avoid; }

@@ -91,6 +91,7 @@ export const STRINGS = {
     realLesson: 'Lección real',
     beforeAstraea: 'Antes de la Astraea',
     fixSent: '{n} va a repararlo',
+    viewSurface: 'Superficie', exploreTitle: 'Exploración:', roverOk: 'rover listo', roverStuck: 'rover atascado ({n} días)', roverLost: 'rover perdido', sitesVisited: '{n} sitios visitados', nextSite: 'siguiente', heliOk: 'helicóptero listo',
     lang: 'English',
   },
   en: {
@@ -182,6 +183,7 @@ export const STRINGS = {
     realLesson: 'Real lesson',
     beforeAstraea: 'Before the Astraea',
     fixSent: '{n} is on it',
+    viewSurface: 'Surface', exploreTitle: 'Exploration:', roverOk: 'rover ready', roverStuck: 'rover stuck ({n} days)', roverLost: 'rover lost', sitesVisited: '{n} sites visited', nextSite: 'next', heliOk: 'helicopter ready',
     lang: 'Español',
   },
 }

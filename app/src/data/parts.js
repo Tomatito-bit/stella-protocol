@@ -6,6 +6,7 @@ export const CATEGORIES = [
   { id: 'comms', name: { es: 'Comunicaciones', en: 'Communications' } },
   { id: 'instruments', name: { es: 'Instrumentos', en: 'Instruments' } },
   { id: 'life', name: { es: 'Soporte de vida', en: 'Life support' } },
+  { id: 'explore', name: { es: 'Exploración', en: 'Exploration' } },
 ]
 
 export const PARTS = [
@@ -89,11 +90,21 @@ export const TESTS = [
     info: { es: 'Abre antenas y paneles en tierra (como hizo Webb).', en: 'Unfolds antennas and panels on the ground (like Webb).' } },
 ]
 
+// Exploration vehicles (3D models from NASA 3D Resources)
+PARTS.push(
+  { id: 'rover', cat: 'explore', cost: 120, mass: 1025, power: 0, max: 1, dests: ['mars', 'moon'], crewedOnly: true,
+    name: { es: 'Rover de superficie', en: 'Surface rover' },
+    info: { es: 'Como Perseverance: recorre sitios reales, toma muestras y tiene su propio generador.', en: 'Like Perseverance: drives to real sites, takes samples and has its own generator.' } },
+  { id: 'helicopter', cat: 'explore', cost: 85, mass: 2, power: 0, max: 1, dests: ['mars'], crewedOnly: true,
+    name: { es: 'Helicóptero explorador', en: 'Scout helicopter' },
+    info: { es: 'Como Ingenuity (1.8 kg, 72 vuelos): explora adelante del rover y evita que se atasque.', en: 'Like Ingenuity (1.8 kg, 72 flights): scouts ahead of the rover so it gets stuck less.' } },
+)
+
 export const partById = Object.fromEntries(PARTS.map((p) => [p.id, p]))
 
 // Ready-made spacecraft for players who don't want to build one (each passes the GO / NO-GO review)
 export const RECOMMENDED = {
-  moon: { parts: { solar: 3, battery: 1, engine: 2, tank: 3, hga: 1, lga: 1, camera: 1, spectrometer: 1, drill: 1, eclss: 2, shielding: 1, supplies: 2, medkit: 1, spares: 1 }, launcher: 'superheavy' },
-  mars: { parts: { solar: 4, battery: 2, engine: 2, tank: 4, hga: 1, lga: 1, camera: 1, spectrometer: 1, radar: 1, eclss: 2, shielding: 1, supplies: 3, medkit: 1, spares: 1 }, launcher: 'superheavy' },
+  moon: { parts: { solar: 3, battery: 1, engine: 2, tank: 3, hga: 1, lga: 1, camera: 1, spectrometer: 1, drill: 1, eclss: 2, shielding: 1, supplies: 2, medkit: 1, spares: 1, rover: 1 }, launcher: 'superheavy' },
+  mars: { parts: { solar: 4, battery: 2, engine: 2, tank: 4, hga: 1, lga: 1, camera: 1, spectrometer: 1, radar: 1, eclss: 2, shielding: 1, supplies: 3, medkit: 1, spares: 1, rover: 1, helicopter: 1 }, launcher: 'superheavy' },
   europa: { parts: { solarxl: 2, rtg: 1, battery: 1, engine: 1, tank: 3, hga: 1, lga: 1, camera: 1, radar: 1, magnetometer: 1, shielding: 3, spares: 1 }, launcher: 'heavy' },
 }

@@ -24,3 +24,7 @@ Runs in any modern browser (desktop or phone). The game opens in English; the **
 - All code is written during the hackathon. Nothing is copied from earlier projects.
 - Only openly licensed assets are used, and every source is credited.
 - The NASA logo is not used.
+
+## 3D model credits
+
+Perseverance rover, Ingenuity helicopter and Apollo Lunar Module: [NASA 3D Resources](https://github.com/nasa/NASA-3D-Resources) (free to use under NASA media guidelines). Lightened in Blender for the web.

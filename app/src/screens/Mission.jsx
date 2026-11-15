@@ -12,6 +12,8 @@ import { EVENTS } from '../data/events'
 import { biometrics } from '../logic/mission'
 import { MissionScene } from '../components/MissionScene'
 import { CrewInterior } from '../components/CrewInterior'
+import { SurfaceScene } from '../components/SurfaceScene'
+import { SITES } from '../data/exploration'
 import { TASKS, SYSTEMS, BROKEN, taskKind, taskTarget, worstSystem, powerLevel } from '../logic/ship'
 
 const PLANS = ['science', 'transmit', 'rest']
@@ -24,20 +26,24 @@ export default function Mission() {
   const storm = event === 'solarStorm' || event === 'radiationBelt'
   const pct = Math.min(100, Math.round((m.science / m.goal) * 100))
   const view = storeView
-  const inside = !!m.crew && view === 'crew'
+  const surface = !!m.explore && view === 'surface'
+  const inside = !surface && !!m.crew && view === 'crew'
   // Life-support fans hum in the background during the mission
   useEffect(() => { startHum(); return stopHum }, [])
 
   return (
     <section className="mission">
       <div className="mission-view">
-        {inside
+        {surface
+          ? <SurfaceScene destId={dest.id} heli={(m.parts.helicopter || 0) > 0} stuck={m.explore.stuck > 0} event={event} paused={journalOpen} />
+          : inside
           ? <CrewInterior crew={m.crew} plan={plan} event={event} destId={dest.id} sel={m.parts} shield={m.shield} tasks={tasks} systems={m.systems} paused={journalOpen} />
           : <MissionScene destId={dest.id} sel={m.parts} crewed={dest.crewed} shield={m.shield} storm={storm} safe={plan === 'rest'} event={event} paused={journalOpen} />}
         {m.crew && (
           <div className="view-toggle">
-            <button className={!inside ? 'on' : ''} onClick={() => setView('ship')}>{t('viewShip')}</button>
+            <button className={!inside && !surface ? 'on' : ''} onClick={() => setView('ship')}>{t('viewShip')}</button>
             <button className={inside ? 'on' : ''} onClick={() => setView('crew')}>{t('viewCrew')}</button>
+            {m.explore && <button className={surface ? 'on' : ''} onClick={() => setView('surface')}>{t('viewSurface')}</button>}
           </div>
         )}
         <div className="hud top">
@@ -457,6 +463,15 @@ function SuppliesPage() {
               </li>
             ))}
           </ul>
+          {m.explore && (
+            <div className="explore-note hand">
+              <b>{t('exploreTitle')}</b>{' '}
+              {m.explore.stuck >= 900 ? t('roverLost') : m.explore.stuck > 0 ? t('roverStuck', { n: m.explore.stuck }) : t('roverOk')}
+              {' · '}{t('sitesVisited', { n: m.explore.idx })}
+              {m.explore.stuck < 900 && <> · {t('nextSite')}: {L(SITES[dest.id][m.explore.idx % SITES[dest.id].length])}</>}
+              {(m.parts.helicopter || 0) > 0 && <> · {t('heliOk')}</>}
+            </div>
+          )}
           {!m.voiceBack && <p className="fact-note"><span className="tape" aria-hidden />{t('goalAntenna')}</p>}
         </>
       )}
@@ -529,7 +544,7 @@ function TasksPage() {
 }
 
 // Jobs as hand-drawn stickers: tap one and it gets circled in red. Repair asks which system.
-const STICKERS = ['science', 'repair', 'comms', 'medbay', 'exercise', 'recycle', 'eva', 'rest']
+const STICKERS = ['science', 'repair', 'comms', 'medbay', 'exercise', 'recycle', 'eva', 'explore', 'rest']
 function TaskPicker({ c }) {
   const { L } = useT()
   const { mission: m, tasks, setTask } = useGame()
@@ -539,8 +554,8 @@ function TaskPicker({ c }) {
   const pick = (k) => { sfx.select(); setTask(c.id, k === 'repair' ? `repair:${target || worstSystem(m.systems)}` : k) }
   return (
     <div className="task-picker">
-      <div className="stickers">
-        {STICKERS.map((k) => (
+      <div className="stickers" style={{ '--n': m.explore ? 9 : 8 }}>
+        {STICKERS.filter((k) => k !== 'explore' || m.explore).map((k) => (
           <button key={k} className={`sticker ${kind === k ? 'on' : ''}`} onClick={() => pick(k)} title={L(TASKS[k].tip)}>
             <TaskIcon kind={k} />
             <span className="hand">{L(TASKS[k].short || TASKS[k].name)}</span>

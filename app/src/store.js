@@ -8,7 +8,8 @@ import { sfx } from './sound'
 
 // Events you watch in orbit; the rest happen inside the ship
 const ORBIT_EVENTS = ['faceMars', 'marsDoor', 'phobosMonolith', 'moonLights', 'blackKnight', 'wowSignal', 'solarStorm', 'radiationBelt', 'micrometeoroid', 'dustStorm', 'dustDevil', 'dust', 'plume', 'opportunity', 'shadowIce', 'delay', 'conjunction', 'earthset', 'gyro', 'transistor']
-const viewFor = (event, crewed) => (!crewed || ORBIT_EVENTS.includes(event) ? 'ship' : 'crew')
+const SURFACE_EVENTS = ['roverStuck', 'leopardRock', 'scoutFlight', 'surfaceStorm', 'regolithJam', 'lavaTube']
+const viewFor = (event, crewed) => (SURFACE_EVENTS.includes(event) ? 'surface' : !crewed || ORBIT_EVENTS.includes(event) ? 'ship' : 'crew')
 const DANGER = ['solarStorm', 'radiationBelt', 'micrometeoroid', 'co2', 'medical', 'panic', 'dustStorm', 'catastrophe', 'deadlock', 'disobedience']
 
 export const SCREENS = ['home', 'destination', 'crew', 'design', 'review', 'launch', 'mission', 'legacy']
@@ -83,7 +84,7 @@ export const useGame = create((set, get) => ({
     else sfx.day()
     // With an event, you first watch it happen; the logbook opens a few seconds later
     // The logbook closes: dawn breaks and you watch the crew go to work (or the event unfold); you open the logbook yourself
-    set({ mission: m, tasks: m.crew ? carryTasks(s.tasks, m) : null, event, live: event, view: event ? viewFor(event, !!m.crew) : m.crew ? 'crew' : 'ship', pick: null, orderPick: null, journalOpen: false })
+    set({ mission: m, tasks: m.crew ? carryTasks(s.tasks, m) : null, event, live: event, view: event ? viewFor(event, !!m.crew) : m.explore && s.tasks && Object.values(s.tasks).includes('explore') ? 'surface' : m.crew ? 'crew' : 'ship', pick: null, orderPick: null, journalOpen: false })
   },
 
   restart: () => set({ screen: 'home', destinationId: null, commanderId: null, selection: {}, launcherId: null, tests: [], mission: null, event: null, pick: null, orderPick: null, journalOpen: false }),

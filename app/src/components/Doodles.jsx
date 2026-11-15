@@ -84,9 +84,9 @@ const KIND = {
   rock: ['micrometeoroid'],
   med: ['medical', 'disobedience', 'fatigueIgnored', 'gravity'],
   talk: ['conflict', 'routineClash', 'pilotEngineer', 'scienceVsSafety', 'enginesHot', 'authority', 'deadlock', 'analystParanoia', 'riskReport', 'catastrophe', 'panic', 'thirdQuarter'],
-  tool: ['co2', 'gyro', 'drill', 'dust', 'vacuum', 'vibration', 'deployment'],
+  tool: ['roverStuck', 'regolithJam', 'surfaceStorm', 'co2', 'gyro', 'drill', 'dust', 'vacuum', 'vibration', 'deployment'],
   signal: ['delay', 'conjunction', 'earthset', 'homeMessage'],
-  star: ['opportunity', 'shadowIce', 'plume', 'dustDevil', 'harvest', 'dustStorm'],
+  star: ['leopardRock', 'lavaTube', 'scoutFlight', 'opportunity', 'shadowIce', 'plume', 'dustDevil', 'harvest', 'dustStorm'],
 }
 export function EventDoodle({ event }) {
   const kind = Object.keys(KIND).find((k) => KIND[k].includes(event)) || 'star'
@@ -140,6 +140,7 @@ export function TaskIcon({ kind }) {
       {kind === 'exercise' && <><path d="M9 20 H31" {...ink} strokeWidth="3" /><rect x="5" y="13" width="5" height="14" rx="1" {...ink} fill="#9aa7c4" /><rect x="30" y="13" width="5" height="14" rx="1" {...ink} fill="#9aa7c4" /></>}
       {kind === 'recycle' && <><path d="M20 6 Q30 18 30 25 A10 10 0 0 1 10 25 Q10 18 20 6 Z" {...ink} fill="#5aa9e6" /><path d="M15 26 Q16 30 20 31" {...ink} stroke="#fff" /></>}
       {kind === 'eva' && <><circle cx="20" cy="16" r="10" {...ink} fill="#eef1f6" /><path d="M13 15 Q20 9 27 15 Q27 21 20 21 Q13 21 13 15 Z" {...ink} fill="#23264a" /><path d="M11 26 Q20 33 29 26 L31 36 H9 Z" {...ink} fill="#eef1f6" /></>}
+      {kind === 'explore' && <><rect x="8" y="14" width="22" height="9" rx="2" {...ink} fill="#e9ecf2" /><path d="M24 14 V8 H29 M26 8 L31 5" {...ink} /><circle cx="11" cy="28" r="3.5" {...ink} fill="#23264a" /><circle cx="19" cy="28" r="3.5" {...ink} fill="#23264a" /><circle cx="27" cy="28" r="3.5" {...ink} fill="#23264a" /><path d="M4 34 Q20 31 36 34" {...ink} strokeDasharray="2 3" /></>}
       {kind === 'rest' && <><path d="M26 8 A13 13 0 1 0 32 28 A10 10 0 0 1 26 8 Z" {...ink} fill="#ffd166" /><path d="M27 12 H32 L27 17 H32" {...ink} strokeWidth="1.5" /></>}
     </svg>
   )

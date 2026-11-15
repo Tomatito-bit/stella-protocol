@@ -4,6 +4,7 @@ import { TESTS, partById } from '../data/parts'
 import { summarize, count } from './budget'
 import { SECRET_EVENTS } from '../data/secretEvents'
 import { storyFor } from '../data/story'
+import { SITES, EXPLORE_EVENTS } from '../data/exploration'
 import { BROKEN, SYSTEMS, TASKS, taskKind, taskTarget, initialSystems, worstSystem } from './ship'
 
 // Seeded random numbers so a mission can be replayed
@@ -69,6 +70,7 @@ export function startMission(dest, sel, launcherId, tests, commanderId, seed) {
     o2: 100,
     water: 100,
     voiceBack: false,
+    explore: (parts.rover || 0) > 0 && SITES[dest.id] && dest.crewed ? { idx: 0, stuck: 0, route: 0 } : null,
     effects: { apathy: false, panic: 0, frustrated: 0, medicBusy: 0, divided: false, halfDays: 0, errorRisk: 0 },
     lastStorm: false,
     over: false,
@@ -87,6 +89,15 @@ export function rollEvent(m, dest, commanderId) {
   const st = styleOf(commanderId)
   const pool = []
   const add = (id, w) => pool.push([id, w])
+  // Exploration: once the rover has started visiting sites, surface events can happen
+  if (m.explore && m.explore.idx > 0 && m.explore.stuck < 900) {
+    for (const [id, ev] of Object.entries(EXPLORE_EVENTS)) {
+      if (ev.dests && !ev.dests.includes(dest.id)) continue
+      if (ev.needsHeli && !(m.parts.helicopter > 0)) continue
+      if (id === 'roverStuck' && m.explore.stuck) continue
+      add(id, 0.05)
+    }
+  }
   // Classified files (fan theories): rare, at most one per mission
   if (m.day >= 3 && !m.secretSeen) {
     const ids = Object.keys(SECRET_EVENTS).filter((id) => SECRET_EVENTS[id].dests.includes(dest.id))
@@ -140,7 +151,7 @@ export function nextDay(m0, dest, commanderId, planIn, choice, opts = {}) {
   let plan = planIn
   const r = rng(m0.seed + m0.day * 7919 + 1)
   const st = styleOf(commanderId)
-  const m = { ...m0, parts: { ...m0.parts }, crew: m0.crew && m0.crew.map((c) => ({ ...c })), decisions: [...m0.decisions], systems: m0.systems && { ...m0.systems } }
+  const m = { ...m0, parts: { ...m0.parts }, crew: m0.crew && m0.crew.map((c) => ({ ...c })), decisions: [...m0.decisions], systems: m0.systems && { ...m0.systems }, explore: m0.explore && { ...m0.explore } }
   const tasks = m.crew && m.systems && opts.tasks
   const jobOf = (c) => taskKind(tasks && tasks[c.id])
   const nJob = (k) => (tasks ? m.crew.filter((c) => jobOf(c) === k).length : 0)
@@ -361,6 +372,43 @@ export function nextDay(m0, dest, commanderId, planIn, choice, opts = {}) {
     } else note('warn', 'El archivo se queda cerrado. Nadie a bordo deja de pensar en eso.', 'The file stays closed. Nobody on board stops thinking about it.')
   }
 
+  // 1a'. Surface exploration events
+  if (choice && EXPLORE_EVENTS[choice.event] && m.explore) {
+    const x = m.explore
+    const ev = choice.event
+    const o = choice.option
+    if (ev === 'roverStuck') {
+      if (o === 'slow') { x.stuck = 3; note('warn', 'El rover avanza milímetro a milímetro: dos días para salir.', 'The rover inches forward: two days to get out.') }
+      else if (r() < 0.5) note('good', '¡Salió a la primera! El rover sigue su camino.', 'It got out on the first try! The rover drives on.')
+      else { x.stuck = 4; note('bad', 'Las ruedas se hundieron más: el rover quedará parado varios días.', 'The wheels sank deeper: the rover will be stuck for days.') }
+    }
+    if (ev === 'leopardRock') {
+      if (o === 'core') { m.science += 25; sciFactor *= 0.7; note('good', 'Muestra guardada en un tubo sellado: +25 de ciencia. Algún día volverá a la Tierra.', 'Sample cached in a sealed tube: +25 science. Someday it will come back to Earth.') }
+      else { m.science += 8; note('good', 'Fotos de alta resolución de la roca: +8 de ciencia.', 'High-resolution photos of the rock: +8 science.') }
+    }
+    if (ev === 'scoutFlight') {
+      if (o === 'fly') {
+        if (r() < 0.85) { x.route = 3; note('good', 'El helicóptero encontró una ruta con buenos sitios: más ciencia en las próximas exploraciones.', 'The helicopter found a route with good sites: more science on the next drives.') }
+        else { m.parts.helicopter = 0; note('bad', 'Una ráfaga tumbó al helicóptero: rotor roto, ya no vuela.', 'A gust knocked the helicopter down: broken rotor, it won’t fly again.') }
+      } else note('good', 'El helicóptero esperó en tierra.', 'The helicopter waited on the ground.')
+    }
+    if (ev === 'surfaceStorm') {
+      if (o === 'park') { x.stuck = Math.max(x.stuck, 2); note('good', 'El rover esperó la tormenta estacionado.', 'The rover waited out the storm parked.') }
+      else if (r() < 0.55) { m.science += 8; note('good', 'Llegaste al siguiente sitio justo antes del polvo: +8 de ciencia.', 'You reached the next site just ahead of the dust: +8 science.') }
+      else { x.stuck = 3; m.electronics = clamp(m.electronics - 5); note('bad', 'La tormenta alcanzó al rover y cubrió sus cámaras.', 'The storm caught the rover and covered its cameras.') }
+    }
+    if (ev === 'regolithJam') {
+      if (o === 'clean') { if (!takeSpare()) x.stuck = Math.max(x.stuck, 2); note('good', 'Ruedas limpias y selladas otra vez.', 'Wheels clean and sealed again.') }
+      else if (r() < 0.5) { x.stuck = 4; note('bad', 'Las articulaciones se trabaron por el polvo.', 'The joints locked up with dust.') }
+    }
+    if (ev === 'lavaTube') {
+      if (o === 'probe') {
+        if (r() < 0.6) { m.science += 30; note('good', '¡Imágenes del interior del tubo de lava! Un refugio natural para futuras bases: +30 de ciencia.', 'Images from inside the lava tube! A natural shelter for future bases: +30 science.') }
+        else { x.stuck = 999; note('bad', 'El borde cedió y el rover cayó al pozo. Sus últimas fotos son espectaculares.', 'The edge gave way and the rover fell into the pit. Its last photos are spectacular.') }
+      } else { m.science += 10; note('good', 'Mapeaste el pozo desde lejos: +10 de ciencia.', 'You mapped the pit from afar: +10 science.') }
+    }
+  }
+
   // 1b. Ongoing social effects
   const fx = m.effects = { ...(m0.effects || {}) }
   if (fx.apathy) { sciFactor *= 0.8; if (plan === 'rest') { fx.apathy = false; note('good', 'El descanso cortó la apatía.', 'The rest broke the apathy.') } }
@@ -384,6 +432,7 @@ export function nextDay(m0, dest, commanderId, planIn, choice, opts = {}) {
   if (tasks) {
     const sys = m.systems
     const nameOf = (c) => crewById[c.id].name
+    if (m.explore && m.explore.stuck > 0 && m.explore.stuck < 900) m.explore.stuck -= 1
     m.crew.forEach((c) => {
       const k = jobOf(c)
       const eff = 0.5 + 0.5 * c.energy / 100
@@ -410,6 +459,22 @@ export function nextDay(m0, dest, commanderId, planIn, choice, opts = {}) {
       if (k === 'exercise') { c.health = clamp(c.health + 5); c.morale = clamp(c.morale + 6); c.lastExercise = day }
       if (k === 'recycle') { m.water = Math.min(100, m.water + 18); m.o2 = Math.min(100, m.o2 + 8) }
       if (k === 'comms') commsBoost += c.duty === 'pilot' ? 1.4 : 1
+      if (k === 'explore') {
+        const x = m.explore
+        if (!x) note('warn', `${nameOf(c)} no tiene rover que manejar.`, `${nameOf(c)} has no rover to drive.`)
+        else if (x.stuck >= 900) note('warn', 'El rover se perdió: ya no se puede explorar.', 'The rover is lost: no more exploring.')
+        else if (x.stuck > 0) note('warn', `El rover sigue atascado (${x.stuck} día${x.stuck > 1 ? 's' : ''} más).`, `The rover is still stuck (${x.stuck} more day${x.stuck > 1 ? 's' : ''}).`)
+        else {
+          const list = SITES[dest.id]
+          const site = list[x.idx % list.length]
+          const gain = Math.round((12 + (x.route > 0 ? 8 : 0) + (m.parts.helicopter > 0 ? 3 : 0)) * eff)
+          m.science += gain
+          x.idx += 1
+          if (x.route > 0) x.route -= 1
+          note('good', `${nameOf(c)} llevó el rover a ${site.es}. ${site.fact.es} (+${gain} ciencia)`, `${nameOf(c)} drove the rover to ${site.en}. ${site.fact.en} (+${gain} science)`)
+          if (r() < (m.parts.helicopter > 0 ? 0.05 : 0.1)) { x.stuck = 3; note('bad', 'De regreso, el rover se atascó en arena suave.', 'On the way back, the rover got stuck in soft sand.') }
+        }
+      }
       if (k === 'eva') {
         // Outside the hull: external repairs need no spares, samples go straight into the science count
         const outside = ['antenna', 'solar'].filter((id) => sys[id] != null && sys[id] < 85).sort((a, b) => sys[a] - sys[b])[0]

@@ -13,7 +13,7 @@ export const SPOT_ROOM = {
 }
 
 // Where each daily job happens on the deck
-const JOB_SPOT = { eva: 'Room_Airlock', science: 'Spot_scientist', comms: 'Spot_pilot', medbay: 'Spot_doctor', exercise: 'Spot_commons', recycle: 'Shelter' }
+const JOB_SPOT = { explore: 'Spot_pilot', eva: 'Room_Airlock', science: 'Spot_scientist', comms: 'Spot_pilot', medbay: 'Spot_doctor', exercise: 'Spot_commons', recycle: 'Shelter' }
 const ROOM_SPOT = { LifeSupport: 'Shelter', Bridge: 'Spot_pilot', Engines: 'Spot_engineer' }
 
 export function crewPlaces(crew, { plan, event, tasks }) {

@@ -11,7 +11,7 @@ export default function Design() {
   const dest = destinationById[useGame((s) => s.destinationId)]
   const s = summarize(dest, selection, launcherId, tests)
   const spf = singlePointFailures(dest, selection)
-  const parts = PARTS.filter((p) => dest.crewed || !p.crewedOnly)
+  const parts = PARTS.filter((p) => (dest.crewed || !p.crewedOnly) && (!p.dests || p.dests.includes(dest.id)))
 
   return (
     <section className="design">
