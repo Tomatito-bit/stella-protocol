@@ -1021,3 +1021,10 @@ html, body { overflow-x: hidden; }
 .sample-jar span { font-size: 12.5px; line-height: 1.05; color: var(--ink); }
 .sample-jar:not(.have) span { color: rgba(35, 38, 74, 0.45); }
 .rover-map .site-letter { font: 700 5px 'Caveat', cursive; fill: #23264a; pointer-events: none; }
+
+/* Phone: the 3D view fills the screen and the closed logbook sits above the view switch */
+@media (max-width: 900px) {
+  .mission-view { height: calc(100dvh - 53px) !important; }
+  .closed-logbook { width: 112px; height: 144px; bottom: 80px !important; right: 10px; }
+  .closed-logbook .cover-hint { display: none; }
+}

@@ -36,7 +36,7 @@ export default function Legacy() {
           <div><dt>{t('electronics')}</dt><dd>{Math.round(m.electronics)}%</dd></div>
         </div>
 
-        {m.explore && <p className="small secrets-found">{t('samplesCount', { n: m.explore.samples.length, goal: SAMPLE_GOAL })}</p>}
+        {m.explore && <p className="small secrets-found">{t('samplesHome', { n: m.explore.samples.length })}{m.explore.samples.length >= SAMPLE_GOAL ? ' ★' : ''}</p>}
         {m.secrets && m.secrets.length > 0 && <p className="small secrets-found">{t('secretsFound', { n: m.secrets.length })}</p>}
         <h3>{t('profile')}: {t(`profile_${profile}`)}</h3>
         <p className="small">{t(`profile_${profile}_info`)} ({safe} {t('risk_safe').toLowerCase()} · {risky} {t('risk_risky').toLowerCase()})</p>

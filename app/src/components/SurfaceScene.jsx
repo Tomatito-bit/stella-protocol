@@ -31,7 +31,24 @@ function Ground({ destId }) {
     g.computeVertexNormals()
     return g
   }, [])
-  return <mesh geometry={geo}><meshStandardMaterial map={map} roughness={1} color={destId === 'mars' ? '#e3b08a' : '#b9b9b9'} /></mesh>
+  // The planet map is a whole-globe image: its polar rows are smeared, so the ground uses only a band
+  // around the equator (no poles), mirrored top-to-bottom so the tiles join without seams
+  const band = useMemo(() => {
+    const img = map.image
+    if (!img || !img.width) return map
+    const c = document.createElement('canvas')
+    c.width = 2048
+    c.height = 410
+    c.getContext('2d').drawImage(img, 0, img.height * 0.3, img.width, img.height * 0.4, 0, 0, c.width, c.height)
+    const t = new THREE.CanvasTexture(c)
+    t.wrapS = THREE.RepeatWrapping
+    t.wrapT = THREE.MirroredRepeatWrapping
+    t.repeat.set(1.4, 7) // keeps the band's 5:1 shape on the square ground
+    t.colorSpace = THREE.SRGBColorSpace
+    t.anisotropy = 4
+    return t
+  }, [map])
+  return <mesh geometry={geo}><meshStandardMaterial map={band} roughness={1} color={destId === 'mars' ? '#e3b08a' : '#b9b9b9'} /></mesh>
 }
 
 // The rover drives the day's leg, from the last site to the one the player chose on the map, then parks
@@ -76,7 +93,7 @@ function SiteMarks({ destId, visited, quest }) {
         const [x, z] = toWorld(s.pos)
         const y = groundY(x, z)
         return visited.includes(i)
-          ? <group key={i} position={[x + 1.5, y, z]}>
+          ? <group key={i} position={[x - 2.6, groundY(x - 2.6, z + 2.2), z + 2.2]}>
               <mesh position={[0, 0.9, 0]}><cylinderGeometry args={[0.04, 0.04, 1.8, 6]} /><meshStandardMaterial color="#ddd" /></mesh>
               <mesh position={[0.3, 1.55, 0]}><boxGeometry args={[0.6, 0.35, 0.02]} /><meshStandardMaterial color="#d64f5c" /></mesh>
             </group>
@@ -120,14 +137,17 @@ function Dust({ target, stuck, color }) {
   const N = 90
   const ref = useRef()
   const geo = useMemo(() => { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(N * 3), 3)); return g }, [])
-  const life = useRef(Array.from({ length: N }, (_, i) => ({ t: i / N, ox: 0, oz: 0, y: 0 })))
+  const life = useRef(Array.from({ length: N }, (_, i) => ({ t: i / N, ox: 0, oz: 0, y: -100 })))
+  const last = useRef(null)
   useFrame((_, dt) => {
     if (!ref.current || !target.current) return
     const attr = ref.current.geometry.attributes.position
     const p = target.current
+    const moving = last.current ? Math.hypot(p.x - last.current[0], p.z - last.current[1]) > 0.002 : false
+    last.current = [p.x, p.z]
     life.current.forEach((d, i) => {
       d.t += dt * (stuck ? 0.9 : 0.5)
-      if (d.t > 1) { d.t = 0; d.ox = p.x + (Math.random() - 0.5) * 2.4; d.oz = p.z + (Math.random() - 0.5) * 2.4; d.y = p.y }
+      if (d.t > 1) { d.t = 0; d.ox = p.x + (Math.random() - 0.5) * 2.4; d.oz = p.z + (Math.random() - 0.5) * 2.4; d.y = moving || stuck ? p.y : -100 }
       attr.setXYZ(i, d.ox, d.y + d.t * (stuck ? 2.5 : 1.2), d.oz)
     })
     attr.needsUpdate = true
@@ -162,7 +182,9 @@ function Follow({ target }) {
     if (!target.current) return
     const p = target.current
     const a = clock.getElapsedTime() * 0.05
-    camera.position.lerp(new THREE.Vector3(p.x + Math.cos(a) * 9, p.y + 5.5, p.z + Math.sin(a) * 9 + 4), 0.04)
+    const cx = p.x + Math.cos(a) * 9
+    const cz = p.z + Math.sin(a) * 9 + 4
+    camera.position.lerp(new THREE.Vector3(cx, Math.max(p.y, groundY(cx, cz)) + 5.5, cz), 0.04)
     look.lerp(p, 0.1)
     camera.lookAt(look.x, look.y + 1, look.z)
   })
