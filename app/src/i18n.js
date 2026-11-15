@@ -80,6 +80,7 @@ const STRINGS = {
     viewShip: 'Nave', viewCrew: 'Tripulación por dentro',
     rate_safety: 'Seguridad', rate_science: 'Ciencia', rate_speed: 'Rapidez', rate_morale: 'Ánimo del equipo', withYou: 'Viajan contigo', chooseCmd: 'Elegir comandante',
     prologue: 'Prólogo', beginMission: 'Comenzar la misión',
+    rv_room: 'Sala de control de misión', rv_fd: 'Director de vuelo: «Encuesta GO / NO-GO para lanzamiento»', rv_polling: 'Encuestando consolas {n}/{total}', rv_go: 'GO PARA LANZAMIENTO', rv_hold: 'EN ESPERA · {n} NO-GO', rv_budget: 'Presupuesto', rv_mass: 'Masa / cohete', rv_power: 'Consumo / energía',
     lang: 'English',
   },
   en: {
@@ -160,6 +161,7 @@ const STRINGS = {
     viewShip: 'Spacecraft', viewCrew: 'Crew inside',
     rate_safety: 'Safety', rate_science: 'Science', rate_speed: 'Speed', rate_morale: 'Crew morale', withYou: 'Flying with you', chooseCmd: 'Choose commander',
     prologue: 'Prologue', beginMission: 'Begin the mission',
+    rv_room: 'Mission Control room', rv_fd: 'Flight Director: “GO / NO-GO poll for launch”', rv_polling: 'Polling consoles {n}/{total}', rv_go: 'GO FOR LAUNCH', rv_hold: 'HOLD · {n} NO-GO', rv_budget: 'Budget', rv_mass: 'Mass / rocket', rv_power: 'Use / power',
     lang: 'Español',
   },
 }
