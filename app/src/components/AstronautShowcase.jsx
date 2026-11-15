@@ -22,7 +22,7 @@ function Figure({ person, pose }) {
     if (root.current) root.current.rotation.y = -0.35 + s(t * 0.5) * 0.35
     // Each style greets differently: wave, thumbs-up, look around, open arms
     if (pose === 'bold') { set('ShoulderR', -2.6 + s(t * 6) * 0.25, -0.3); set('ElbowR', -0.6); set('ShoulderL', 0.1, 0.15) }
-    else if (pose === 'science') { set('ShoulderL', -1.2, 0.2); set('ElbowL', -1.4); set('ShoulderR', -0.4, -0.2); set('ElbowR', -0.9); set('Head', 0.15 + s(t * 1.5) * 0.1) }
+    else if (pose === 'science') { set('ShoulderL', -0.7, 0.35); set('ElbowL', -1.2); set('ShoulderR', -0.3, -0.25); set('ElbowR', -0.5); set('Head', 0.12 + s(t * 1.5) * 0.06) }
     else if (pose === 'diplomat') { set('ShoulderL', -0.5, 0.9 + s(t * 2) * 0.1); set('ShoulderR', -0.5, -0.9 - s(t * 2) * 0.1); set('ElbowL', -0.3); set('ElbowR', -0.3) }
     else { set('ShoulderR', -0.2, -0.15); set('ShoulderL', -0.2, 0.15); set('ElbowL', -1.6); set('ElbowR', -1.6); set('Head', s(t * 0.8) * 0.1) }
     if (pose !== 'science') set('Head', s(t * 0.9) * 0.08)

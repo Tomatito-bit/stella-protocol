@@ -111,4 +111,35 @@ export const SOCIAL_EVENTS = {
       { id: 'push', risk: 'risky', label: { es: 'Intentar seguir', en: 'Try to carry on' }, detail: { es: 'Castigo fuerte a salud, energía y ciencia por 2 días.', en: 'Heavy hit to health, energy and science for 2 days.' } },
     ],
   },
+  analystParanoia: {
+    tier: 'easy', hazard: tier.easy,
+    title: { es: 'Paranoia probabilística', en: 'Probabilistic paranoia' },
+    text: { es: 'La analista revisa en voz alta el consumo de cada tripulante y señala quién gasta más calorías o aire de lo estipulado. Nadie se siente cómodo.', en: 'The analyst reads out everyone’s consumption and points at whoever uses more calories or air than allowed. Nobody is comfortable.' },
+    fact: { es: 'En misiones análogas (HI-SEAS, Mars-500) vigilarse entre compañeros fue de las fuentes de tensión más comunes.', en: 'In analog missions (HI-SEAS, Mars-500) crewmates monitoring each other was one of the most common sources of tension.' },
+    options: [
+      { id: 'private', risk: 'safe', label: { es: 'Que los reportes sean privados', en: 'Make the reports private' }, detail: { es: 'Los datos siguen, sin señalar a nadie.', en: 'The data stays, nobody is singled out.' } },
+      { id: 'ignore', risk: 'medium', label: { es: 'Dejar que siga', en: 'Let it go on' }, detail: { es: '−5% de ánimo y desconfianza.', en: '−5% morale and distrust.' } },
+    ],
+  },
+  riskReport: {
+    tier: 'mid', hazard: tier.mid,
+    title: { es: 'Probabilidad contra intuición', en: 'Probability vs. intuition' },
+    text: { es: 'La analista demuestra que la ruta actual tiene 35% de probabilidad de fallo grave y exige un rodeo. El capitán se niega: gastaría combustible de reserva.', en: 'The analyst shows the current route has a 35% chance of serious failure and demands a detour. The captain refuses: it would burn reserve fuel.' },
+    fact: { es: 'Tras el Columbia, la NASA reforzó que cualquier persona pueda detener una operación si los datos indican riesgo.', en: 'After Columbia, NASA reinforced that anyone can stop an operation if the data shows risk.' },
+    options: [
+      { id: 'detour', risk: 'safe', label: { es: 'Seguir a la analista: rodeo', en: 'Follow the analyst: detour' }, detail: { es: 'La nave a salvo, pero pierdes media ciencia y un día de provisiones.', en: 'The craft is safe, but you lose half the science and a day of supplies.' } },
+      { id: 'stay', risk: 'risky', label: { es: 'Mantener la ruta del capitán', en: 'Keep the captain’s route' }, detail: { es: 'Sube el estrés y el riesgo de error.', en: 'Stress and the risk of error go up.' } },
+    ],
+  },
+  catastrophe: {
+    tier: 'hard', hazard: tier.hard,
+    title: { es: 'El cálculo de la catástrofe', en: 'The catastrophe math' },
+    text: { es: 'La analista presenta un informe frío: los recursos no alcanzan para todos hasta el final. Propone recortar raciones o sellar un módulo. El médico protesta; la tripulación se rompe.', en: 'The analyst delivers a cold report: resources won’t last for everyone until the end. She proposes cutting rations or sealing a module. The doctor protests; the crew breaks.' },
+    fact: { es: 'Las reglas de vuelo de la NASA definen de antemano qué hacer si faltan recursos, para no decidir en pánico.', en: 'NASA flight rules define in advance what to do if resources run short, so nobody decides in panic.' },
+    options: [
+      { id: 'ration', risk: 'medium', label: { es: 'Recortar raciones a todos', en: 'Cut everyone’s rations' }, detail: { es: '+3 días de provisiones; todos pierden salud. No hay vuelta atrás.', en: '+3 days of supplies; everyone loses health. No going back.' } },
+      { id: 'seal', risk: 'risky', label: { es: 'Sellar un módulo', en: 'Seal off a module' }, detail: { es: '+2 días de provisiones y aire; el ánimo se desploma y se pierde ciencia.', en: '+2 days of supplies and air; morale collapses and science suffers.' } },
+      { id: 'refuse', risk: 'risky', label: { es: 'Rechazar el informe', en: 'Reject the report' }, detail: { es: 'Nadie sacrifica nada… por ahora.', en: 'Nobody sacrifices anything… for now.' } },
+    ],
+  },
 }

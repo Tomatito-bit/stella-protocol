@@ -25,7 +25,7 @@ export function loadDemo() {
     let m = startMission(d, base.selection, base.launcherId, base.tests, base.commanderId, 4242)
     const days = screen === 'legacy' ? m.totalDays : 3
     for (let i = 0; i < days && !m.over; i++) m = nextDay(m, d, base.commanderId, 'science', null)
-    useGame.setState({ ...base, screen, mission: m, event: q.get('event'), journalOpen: q.has('logbook') })
+    useGame.setState({ ...base, screen, mission: m, event: q.get('event'), journalOpen: q.has('logbook'), plan: q.get('plan') || 'science' })
 
     return
   }

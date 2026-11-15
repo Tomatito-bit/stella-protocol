@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useGame } from '../store'
 import { useT } from '../i18n'
-import { CREW } from '../data/crew'
+import { CREW, SHIP_NAME } from '../data/crew'
 import { destinationById } from '../data/destinations'
 import { AstronautShowcase } from '../components/AstronautShowcase'
 
@@ -19,7 +19,7 @@ export default function Crew() {
   const dest = destinationById[useGame((s) => s.destinationId)]
   const choose = useGame((s) => s.chooseCommander)
   const go = useGame((s) => s.go)
-  const [i, setI] = useState(0)
+  const [i, setI] = useState(() => Math.max(0, CREW.findIndex((x) => x.id === new URLSearchParams(location.search).get('cmd'))))
   const c = CREW[i]
   const move = (k) => setI((x) => (x + k + CREW.length) % CREW.length)
   const others = CREW.filter((x) => x.id !== c.id)
@@ -42,10 +42,11 @@ export default function Crew() {
 
       <div className="select-info" key={`info-${c.id}`}>
         <button className="link" onClick={() => go('destination')}>← {t('back')}</button>
-        <p className="eyebrow">{dest.crewed ? t('chooseCommander') : t('teamOnEarth')} · {L(dest.name)}</p>
+        <p className="eyebrow">{dest.crewed ? t('chooseCommander') : t('teamOnEarth')} · {SHIP_NAME} · {L(dest.name)}</p>
         <h1>{c.name}</h1>
         <p className="role-line"><span className="style-chip">{L(c.styleName)}</span> {L(c.role)}</p>
         <p className="lead quote-big">“{L(c.quote)}”</p>
+        {c.bio && <p className="small crew-bio">{L(c.bio)}</p>}
 
         <div className="ratings">
           {Object.entries(RATINGS[c.style]).map(([k, v]) => (

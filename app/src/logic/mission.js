@@ -93,6 +93,9 @@ export function rollEvent(m, dest, commanderId) {
     add('enginesHot', 0.04)
     add('routineClash', 0.07)
     add('pilotEngineer', 0.05)
+    add('analystParanoia', 0.05)
+    if (phase > 0.2) add('riskReport', 0.05)
+    if (m.supplies <= 3 && !m.catastropheSeen) add('catastrophe', 0.3)
   }
   add('solarStorm', 0.09 * dest.radiation * st.danger)
   if (dest.id === 'europa') add('radiationBelt', 0.22 * st.danger)
@@ -260,6 +263,20 @@ export function nextDay(m0, dest, commanderId, plan, choice) {
     if (event === 'pilotEngineer') {
       if (option === 'protocol') note('good', 'Nuevo protocolo: cada maniobra se anuncia antes.', 'New protocol: every maneuver is called out first.')
       else { powerPenalty = 0.85; note('warn', 'Se gastó energía de más este turno.', 'Extra power was used this turn.') }
+    }
+    if (event === 'analystParanoia') {
+      if (option === 'private') note('good', 'Los reportes ahora son privados: se acabó el señalamiento.', 'Reports are private now: no more finger-pointing.')
+      else { crewHit('morale', -5); note('warn', 'Crece la desconfianza: −5% de ánimo.', 'Distrust grows: −5% morale.') }
+    }
+    if (event === 'riskReport') {
+      if (option === 'detour') { sciFactor *= 0.5; m.supplies = Math.max(0, m.supplies - 1); note('good', 'Rodeo completado: la nave evitó la zona de riesgo.', 'Detour complete: the craft avoided the danger zone.') }
+      else { crewHit('morale', -10); m.effects.errorRisk = Math.max(m.effects.errorRisk || 0, 0.15); note('warn', 'Mantuvieron la ruta; la tripulación vuela con los nervios de punta.', 'They kept the route; the crew flies on edge.') }
+    }
+    if (event === 'catastrophe') {
+      m.catastropheSeen = true
+      if (option === 'ration') { m.supplies += 3; crewHit('health', -12); crewHit('morale', -10); note('bad', 'Raciones recortadas: alcanzará la comida, pero todos están más débiles.', 'Rations cut: the food will last, but everyone is weaker.') }
+      else if (option === 'seal') { m.supplies += 2; crewHit('morale', -22); sciFactor *= 0.5; note('bad', 'Se selló un módulo. Sobreviven los números; el ánimo, no tanto.', 'A module was sealed. The numbers survive; morale, not so much.') }
+      else { const an = role('scientist'); an.morale = clamp(an.morale - 20); note('warn', 'Rechazaste el informe. La analista se aísla y el problema sigue ahí.', 'You rejected the report. The analyst withdraws and the problem remains.') }
     }
     if (event === 'scienceVsSafety') {
       if (option === 'science') { sciFactor *= 1.35; captain.morale = clamp(captain.morale - 15); note('good', 'Más datos de la zona inestable; el capitán queda tenso.', 'More data from the unstable zone; the captain is tense.') }

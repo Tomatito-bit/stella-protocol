@@ -124,7 +124,8 @@ function Astronaut({ place, nodes }) {
     // Sleeping astronauts lie on their bunk; others stand on the deck
     const lying = !walking && place.mode === 'sleep'
     g.rotation.x = THREE.MathUtils.lerp(g.rotation.x, lying ? -Math.PI / 2 : 0, 0.15)
-    g.position.y = THREE.MathUtils.lerp(g.position.y, lying ? 0.55 : walking ? Math.abs(s(t * 9)) * 0.05 : 0, 0.2)
+    g.position.y = THREE.MathUtils.lerp(g.position.y, lying ? 0.62 : walking ? Math.abs(s(t * 9)) * 0.05 : 0, 0.2)
+    g.scale.setScalar(THREE.MathUtils.lerp(g.scale.x, lying ? 1.0 : 1.35, 0.15))
   })
 
   const start = nodes[place.spot]

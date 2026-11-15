@@ -10,6 +10,9 @@ const WORLDS = {
   europa: { map: '/textures/europa.jpg', glow: '#7dd3fc', tilt: 0.05 },
 }
 
+// Load every world up front so switching destinations never shows a blank frame
+Object.values(WORLDS).forEach((w) => useTexture.preload(w.map))
+
 function Globe({ id, speed }) {
   const w = WORLDS[id]
   const map = useTexture(w.map, (tex) => {
@@ -17,8 +20,14 @@ function Globe({ id, speed }) {
     tex.anisotropy = 8
   })
   const ref = useRef()
+  const shown = useRef(id)
   useFrame((_, dt) => {
-    if (ref.current) ref.current.rotation.y += dt * speed
+    const g = ref.current
+    if (!g) return
+    g.rotation.y += dt * speed
+    // A new world pops in with a quick zoom-and-spin instead of a hard cut
+    if (shown.current !== id) { shown.current = id; g.scale.setScalar(0.82); g.rotation.y -= 0.8 }
+    g.scale.setScalar(THREE.MathUtils.lerp(g.scale.x, 1, Math.min(1, dt * 6)))
   })
   return (
     <group rotation={[0, 0, w.tilt]}>

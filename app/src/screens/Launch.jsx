@@ -6,6 +6,7 @@ import { LAUNCHERS } from '../data/parts'
 import { summarize } from '../logic/budget'
 import { T, telemetry, phaseOf } from '../logic/launch'
 import { LaunchScene } from '../components/LaunchScene'
+import { PROLOGUE } from '../data/prologue'
 
 // Phase D: countdown, liftoff, staging, fairing, cruise and orbit insertion
 export default function Launch() {
@@ -14,6 +15,7 @@ export default function Launch() {
   const dest = destinationById[useGame((s) => s.destinationId)]
   const start = useRef(0)
   const [sec, setSec] = useState(0)
+  const [story, setStory] = useState(() => import.meta.env.DEV && new URLSearchParams(location.search).has('story'))
   const launcher = LAUNCHERS.find((l) => l.id === launcherId) || LAUNCHERS[1]
   const shield = summarize(dest, selection, launcherId, tests).shield
 
@@ -23,12 +25,12 @@ export default function Launch() {
     const tick = () => {
       const s = (performance.now() - start.current) / 1000
       setSec(s)
-      if (s >= T.end) return launch()
+      if (s >= T.end) return setStory(true)
       id = requestAnimationFrame(tick)
     }
     id = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(id)
-  }, [launch])
+  }, [])
 
   const phase = phaseOf(sec)
   const tel = telemetry(sec)
@@ -53,7 +55,19 @@ export default function Launch() {
           <span key={p} className={sec >= T[p === 'ignition' ? 'ignition' : p === 'maxq' ? 'maxQ' : p] ? 'done' : ''}>{t(`step_${p}`)}</span>
         ))}
       </div>
-      <button className="btn ghost skip" onClick={launch}>{t('skip')} »</button>
+      {!story && <button className="btn ghost skip" onClick={() => setStory(true)}>{t('skip')} »</button>}
+      {story && (
+        <div className="prologue">
+          <div className="prologue-card">
+            <p className="eyebrow">{t('prologue')}</p>
+            <h2>{L(PROLOGUE.title)}</h2>
+            {PROLOGUE.paragraphs.map((p, k) => (
+              <p key={k} style={{ animationDelay: `${0.4 + k * 1.2}s` }}>{L(p).replace('{dest}', L(dest.name))}</p>
+            ))}
+            <button className="btn big glow" style={{ animationDelay: `${0.4 + PROLOGUE.paragraphs.length * 1.2}s` }} onClick={launch}>{t('beginMission')} →</button>
+          </div>
+        </div>
+      )}
     </section>
   )
 }

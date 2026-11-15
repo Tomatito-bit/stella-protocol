@@ -1,22 +1,17 @@
 import * as THREE from 'three'
 
-// Clone the Blender astronaut and tint it for one crew member: accent colour, skin and hair
+// Which accessory kit each duty wears (Kit_<kit>_* nodes in astronaut.glb)
+const KIT = { engineer: 'engineer', pilot: 'pilot', doctor: 'doctor', scientist: 'analyst' }
+
+// Clone the Blender astronaut for one crew member: whole suit in their colour and only their role's kit
 export function dressAstronaut(scene, person) {
   const m = scene.clone(true)
+  const kit = KIT[person.duty]
+  const suit = new THREE.MeshStandardMaterial({ color: person.color, roughness: 0.55 })
   m.traverse((o) => {
-    if (!o.isMesh || !o.material) return
-    const name = o.material.name
-    if (name === 'Accent') {
-      const mat = o.material.clone()
-      mat.color.set(person.color)
-      mat.emissive = new THREE.Color(person.color)
-      mat.emissiveIntensity = 0.35
-      o.material = mat
-    } else if (name === 'Skin' && person.skin) {
-      const mat = o.material.clone(); mat.color.set(person.skin); o.material = mat
-    } else if (name === 'Hair' && person.hair) {
-      const mat = o.material.clone(); mat.color.set(person.hair); o.material = mat
-    }
+    const k = o.name.match(/^Kit_([a-z]+)_/)
+    if (k) o.visible = k[1] === kit
+    if (o.isMesh && o.material && o.material.name === 'Suit') o.material = suit
   })
   return m
 }

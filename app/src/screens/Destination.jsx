@@ -28,7 +28,7 @@ export default function Destination() {
 
   return (
     <section className="select" style={{ '--accent': d.color }}>
-      <div className="select-planet" key={d.id}>
+      <div className="select-planet">
         <Planet3D id={d.id} stars speed={0.08} camera={3} />
       </div>
 

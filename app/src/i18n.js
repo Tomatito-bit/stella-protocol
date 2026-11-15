@@ -79,6 +79,7 @@ const STRINGS = {
     missionOf: 'Misión {n} de {total}', chooseThis: 'Elegir esta misión', recommended: 'Usar nave recomendada', clear: 'Vaciar',
     viewShip: 'Nave', viewCrew: 'Tripulación por dentro',
     rate_safety: 'Seguridad', rate_science: 'Ciencia', rate_speed: 'Rapidez', rate_morale: 'Ánimo del equipo', withYou: 'Viajan contigo', chooseCmd: 'Elegir comandante',
+    prologue: 'Prólogo', beginMission: 'Comenzar la misión',
     lang: 'English',
   },
   en: {
@@ -158,6 +159,7 @@ const STRINGS = {
     missionOf: 'Mission {n} of {total}', chooseThis: 'Choose this mission', recommended: 'Use recommended spacecraft', clear: 'Clear',
     viewShip: 'Spacecraft', viewCrew: 'Crew inside',
     rate_safety: 'Safety', rate_science: 'Science', rate_speed: 'Speed', rate_morale: 'Crew morale', withYou: 'Flying with you', chooseCmd: 'Choose commander',
+    prologue: 'Prologue', beginMission: 'Begin the mission',
     lang: 'Español',
   },
 }
