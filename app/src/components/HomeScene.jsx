@@ -1,8 +1,9 @@
 import { memo, useMemo, useRef } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
+import { useFrame, useThree } from '@react-three/fiber'
+import { GameCanvas } from './GameCanvas'
 import { Stars } from '@react-three/drei'
 import * as THREE from 'three'
-import { earthMaterial, cloudMaterial, atmosphereMaterial } from './earthShaders'
+import { earthMaterial, cloudMaterial, atmosphereMaterial, bakeEarth } from './earthShaders'
 
 // Home screen: Earth seen from the Astraea's observation deck, with the Sun rising over the limb.
 const SUN = new THREE.Vector3(0.65, 0.5, -0.55).normalize()
@@ -13,26 +14,27 @@ const SUN_POS = [16, 1.6, -48]
 function Earth() {
   const earth = useRef()
   const clouds = useRef()
-  const uni = useMemo(() => ({
-    earth: { sunDir: { value: SUN } },
-    clouds: { sunDir: { value: SUN }, time: { value: 0 } },
-    air: { sunDir: { value: SUN } },
-  }), [])
-  useFrame(({ clock }, dt) => {
-    if (earth.current) earth.current.rotation.y += dt * 0.012
-    if (clouds.current) {
-      clouds.current.rotation.y += dt * 0.017
-      clouds.current.material.uniforms.time.value = clock.getElapsedTime()
+  const gl = useThree((s) => s.gl)
+  const uni = useMemo(() => {
+    const tex = bakeEarth(gl)
+    return {
+      earth: { sunDir: { value: SUN }, surface: { value: tex.surface }, extra: { value: tex.extra } },
+      clouds: { sunDir: { value: SUN }, extra: { value: tex.extra } },
+      air: { sunDir: { value: SUN } },
     }
+  }, [gl])
+  useFrame((_, dt) => {
+    if (earth.current) earth.current.rotation.y += dt * 0.012
+    if (clouds.current) clouds.current.rotation.y += dt * 0.017 // clouds drift over the ground
   })
   return (
     <group position={EARTH_POS} rotation={[-0.75, 0, 0.08]}>
       <mesh ref={earth}>
-        <sphereGeometry args={[R, 160, 160]} />
+        <sphereGeometry args={[R, 128, 96]} />
         <shaderMaterial args={[{ ...earthMaterial, uniforms: uni.earth }]} />
       </mesh>
       <mesh ref={clouds}>
-        <sphereGeometry args={[R * 1.008, 160, 160]} />
+        <sphereGeometry args={[R * 1.008, 128, 96]} />
         <shaderMaterial args={[{ ...cloudMaterial, uniforms: uni.clouds, transparent: true, depthWrite: false }]} />
       </mesh>
       <mesh scale={1.05}>
@@ -82,12 +84,12 @@ function Drift() {
 
 export const HomeScene = memo(function HomeScene() {
   return (
-    <Canvas camera={{ position: [0, 0, 0], fov: 55 }} dpr={[1, 2]} gl={{ antialias: true }}>
+    <GameCanvas camera={{ position: [0, 0, 0], fov: 55 }} gl={{ antialias: true }}>
       <color attach="background" args={['#02030a']} />
-      <Stars radius={120} depth={60} count={4000} factor={4} fade speed={0.4} />
+      <Stars radius={120} depth={60} count={2200} factor={4} fade speed={0.4} />
       <Sun />
       <Earth />
       <Drift />
-    </Canvas>
+    </GameCanvas>
   )
 })

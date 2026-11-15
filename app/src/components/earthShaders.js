@@ -1,3 +1,4 @@
+import * as THREE from 'three'
 // Procedural Earth: continents, oceans, ice, clouds, city lights and atmosphere, all from 3D noise.
 // No texture download: everything is computed on the GPU, so it never shows seams.
 
@@ -29,59 +30,99 @@ float snoise(vec3 v){
 float fbm(vec3 p){float s=0.0;float a=0.5;for(int i=0;i<6;i++){s+=a*snoise(p);p*=2.03;a*=0.5;}return s;}
 `
 
-const VERT = /* glsl */ `
-varying vec3 vPos; varying vec3 vNormalW; varying vec3 vView;
+
+// Baking: the expensive noise (continents, ice, clouds, city lights) is computed ONCE into two
+// textures when the scene starts. Every frame after that only samples them and applies sunlight.
+const BAKE = /* glsl */ `
+uniform int mode;
+varying vec2 vUv;
+${NOISE}
 void main(){
-  vPos = normalize(position);
+  // Same mapping as THREE.SphereGeometry, so the texture wraps without seams
+  float phi = vUv.x * 6.28318530718;
+  float theta = (1.0 - vUv.y) * 3.14159265359;
+  vec3 p = vec3(-cos(phi) * sin(theta), cos(theta), sin(phi) * sin(theta));
+  float h = fbm(p * 1.6) + 0.3 * fbm(p * 5.0 + 3.1);
+  float land = smoothstep(0.15, 0.19, h);
+  float ice = smoothstep(0.8, 0.9, abs(p.y) + 0.06 * fbm(p * 9.0));
+  if (mode == 0) {
+    vec3 ocean = mix(vec3(0.005, 0.03, 0.12), vec3(0.02, 0.2, 0.42), smoothstep(-0.45, 0.06, h));
+    float dry = smoothstep(0.15, 0.6, fbm(p * 2.6 + 7.0) + (0.3 - abs(p.y)) * 0.5);
+    vec3 green = mix(vec3(0.07, 0.2, 0.06), vec3(0.18, 0.3, 0.1), smoothstep(0.08, 0.4, h));
+    vec3 ground = mix(green, vec3(0.55, 0.43, 0.26), dry);
+    ground = mix(ground, vec3(0.42, 0.38, 0.33), smoothstep(0.45, 0.7, h));
+    vec3 col = mix(mix(ocean, ground, land), vec3(0.9, 0.94, 1.0), ice);
+    gl_FragColor = vec4(col, (1.0 - land) * (1.0 - ice)); // alpha = open ocean (for sun glint)
+  } else {
+    float city = land * (1.0 - ice) * smoothstep(0.55, 0.85, snoise(p * 70.0) * 0.5 + 0.5 + 0.3 * snoise(p * 9.0));
+    float c = fbm(p * 2.4);
+    float swirl = fbm(p * 7.0 + c * 1.5);
+    float cloud = smoothstep(0.12, 0.62, c + 0.35 * swirl);
+    gl_FragColor = vec4(city, cloud, 0.0, 1.0);
+  }
+}`
+
+const baked = new WeakMap()
+export function bakeEarth(gl, width = 2048) {
+  if (baked.has(gl)) return baked.get(gl)
+  const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1)
+  const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2))
+  const scene = new THREE.Scene()
+  scene.add(quad)
+  const make = (mode) => {
+    const rt = new THREE.WebGLRenderTarget(width, width / 2, { generateMipmaps: true, minFilter: THREE.LinearMipmapLinearFilter, magFilter: THREE.LinearFilter, wrapS: THREE.RepeatWrapping })
+    rt.texture.wrapS = THREE.RepeatWrapping
+    quad.material = new THREE.ShaderMaterial({ uniforms: { mode: { value: mode } }, vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }', fragmentShader: BAKE })
+    const prev = gl.getRenderTarget()
+    gl.setRenderTarget(rt)
+    gl.render(scene, cam)
+    gl.setRenderTarget(prev)
+    quad.material.dispose()
+    return rt.texture
+  }
+  const result = { surface: make(0), extra: make(1) }
+  quad.geometry.dispose()
+  baked.set(gl, result)
+  return result
+}
+
+const VERT_UV = /* glsl */ `
+varying vec2 vUv; varying vec3 vNormalW; varying vec3 vView;
+void main(){
+  vUv = uv;
   vec4 w = modelMatrix * vec4(position, 1.0);
   vNormalW = normalize(mat3(modelMatrix) * normal);
   vView = normalize(cameraPosition - w.xyz);
   gl_Position = projectionMatrix * viewMatrix * w;
 }`
 
+// Cheap per-frame Earth: baked colours + sunlight, ocean glint, sunrise band and city lights at night
 export const earthMaterial = {
-  vertexShader: VERT,
+  vertexShader: VERT_UV,
   fragmentShader: /* glsl */ `
-  uniform vec3 sunDir;
-  varying vec3 vPos; varying vec3 vNormalW; varying vec3 vView;
-  ${NOISE}
+  uniform sampler2D surface; uniform sampler2D extra; uniform vec3 sunDir;
+  varying vec2 vUv; varying vec3 vNormalW; varying vec3 vView;
   void main(){
-    vec3 p = vPos;
-    float h = fbm(p * 1.6) + 0.3 * fbm(p * 5.0 + 3.1);
-    float land = smoothstep(0.15, 0.19, h);
-    vec3 ocean = mix(vec3(0.005, 0.03, 0.12), vec3(0.02, 0.2, 0.42), smoothstep(-0.45, 0.06, h));
-    float dry = smoothstep(0.15, 0.6, fbm(p * 2.6 + 7.0) + (0.3 - abs(p.y)) * 0.5);
-    vec3 green = mix(vec3(0.07, 0.2, 0.06), vec3(0.18, 0.3, 0.1), smoothstep(0.08, 0.4, h));
-    vec3 desert = vec3(0.55, 0.43, 0.26);
-    vec3 ground = mix(green, desert, dry);
-    ground = mix(ground, vec3(0.42, 0.38, 0.33), smoothstep(0.45, 0.7, h));
-    float ice = smoothstep(0.8, 0.9, abs(p.y) + 0.06 * fbm(p * 9.0));
-    vec3 col = mix(ocean, ground, land);
-    col = mix(col, vec3(0.9, 0.94, 1.0), ice);
-
+    vec4 s = texture2D(surface, vUv);
+    float city = texture2D(extra, vUv).r;
     vec3 n = normalize(vNormalW);
     float d = dot(n, sunDir);
     float day = smoothstep(-0.12, 0.35, d);
     vec3 r = reflect(-sunDir, n);
-    float spec = pow(max(dot(r, vView), 0.0), 40.0) * (1.0 - land) * (1.0 - ice) * day;
+    float spec = pow(max(dot(r, vView), 0.0), 40.0) * s.a * day;
     float glow = exp(-pow(d * 5.0, 2.0));
-    float city = land * (1.0 - ice) * smoothstep(0.55, 0.85, snoise(p * 70.0) * 0.5 + 0.5 + 0.3 * snoise(p * 9.0)) * smoothstep(0.08, -0.2, d);
-    vec3 outc = col * (0.04 + 1.25 * day) + vec3(0.9, 0.75, 0.55) * spec * 0.9 + vec3(1.0, 0.45, 0.12) * glow * 0.18 + vec3(1.0, 0.72, 0.35) * city * 1.3;
-    gl_FragColor = vec4(outc, 1.0);
+    float lights = city * smoothstep(0.08, -0.2, d);
+    gl_FragColor = vec4(s.rgb * (0.04 + 1.25 * day) + vec3(0.9, 0.75, 0.55) * spec * 0.9 + vec3(1.0, 0.45, 0.12) * glow * 0.18 + vec3(1.0, 0.72, 0.35) * lights * 1.3, 1.0);
   }`,
 }
 
 export const cloudMaterial = {
-  vertexShader: VERT,
+  vertexShader: VERT_UV,
   fragmentShader: /* glsl */ `
-  uniform vec3 sunDir; uniform float time;
-  varying vec3 vPos; varying vec3 vNormalW; varying vec3 vView;
-  ${NOISE}
+  uniform sampler2D extra; uniform vec3 sunDir;
+  varying vec2 vUv; varying vec3 vNormalW; varying vec3 vView;
   void main(){
-    vec3 p = vPos;
-    float c = fbm(p * 2.4 + vec3(time * 0.006, 0.0, time * 0.003));
-    float swirl = fbm(p * 7.0 + c * 1.5);
-    float a = smoothstep(0.12, 0.62, c + 0.35 * swirl);
+    float a = texture2D(extra, vUv).g;
     float d = dot(normalize(vNormalW), sunDir);
     float day = smoothstep(-0.1, 0.4, d);
     vec3 col = mix(vec3(1.0, 0.6, 0.35), vec3(1.0), smoothstep(0.0, 0.3, d)) * (0.03 + 1.1 * day);

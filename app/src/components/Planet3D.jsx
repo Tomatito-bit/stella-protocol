@@ -1,5 +1,6 @@
 import { Suspense, memo, useRef } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
+import { useFrame } from '@react-three/fiber'
+import { GameCanvas } from './GameCanvas'
 import { Stars, useTexture } from '@react-three/drei'
 import * as THREE from 'three'
 
@@ -42,13 +43,13 @@ function Globe({ id, speed }) {
 // A rotating planet with its real map. `stars` adds a starfield behind it.
 export const Planet3D = memo(function Planet3D({ id, speed = 0.12, stars = false, camera = 3.4 }) {
   return (
-    <Canvas camera={{ position: [0, 0, camera], fov: 40 }} dpr={[1, 2]} gl={{ antialias: true, alpha: true }}>
+    <GameCanvas camera={{ position: [0, 0, camera], fov: 40 }} gl={{ antialias: true, alpha: true }}>
       <ambientLight intensity={0.12} />
       <directionalLight position={[-4, 1.5, 3]} intensity={2.6} />
-      {stars && <Stars radius={60} depth={40} count={2500} factor={3} fade speed={0.4} />}
+      {stars && <Stars radius={60} depth={40} count={1500} factor={3} fade speed={0.4} />}
       <Suspense fallback={null}>
         <Globe id={id} speed={speed} />
       </Suspense>
-    </Canvas>
+    </GameCanvas>
   )
 })

@@ -57,3 +57,6 @@ if (new URLSearchParams(location.search).has('widthcheck')) {
     })
   }, 2500)
 }
+
+// Dev only: lets the recording bot read the game state (it still plays by clicking the real buttons)
+if (import.meta.env.DEV) window.__game = useGame

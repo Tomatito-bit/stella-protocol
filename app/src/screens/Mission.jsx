@@ -32,8 +32,8 @@ export default function Mission() {
     <section className="mission">
       <div className="mission-view">
         {inside
-          ? <CrewInterior crew={m.crew} plan={plan} event={event} destId={dest.id} sel={m.parts} shield={m.shield} tasks={tasks} systems={m.systems} />
-          : <MissionScene destId={dest.id} sel={m.parts} crewed={dest.crewed} shield={m.shield} storm={storm} safe={plan === 'rest'} event={event} />}
+          ? <CrewInterior crew={m.crew} plan={plan} event={event} destId={dest.id} sel={m.parts} shield={m.shield} tasks={tasks} systems={m.systems} paused={journalOpen} />
+          : <MissionScene destId={dest.id} sel={m.parts} crewed={dest.crewed} shield={m.shield} storm={storm} safe={plan === 'rest'} event={event} paused={journalOpen} />}
         {m.crew && (
           <div className="view-toggle">
             <button className={!inside ? 'on' : ''} onClick={() => setView('ship')}>{t('viewShip')}</button>

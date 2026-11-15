@@ -1,5 +1,6 @@
 import { memo, useMemo, useRef } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
+import { useFrame } from '@react-three/fiber'
+import { GameCanvas } from './GameCanvas'
 import { OrbitControls, Stars, ContactShadows, Environment, Lightformer } from '@react-three/drei'
 import * as THREE from 'three'
 
@@ -347,12 +348,12 @@ function Bell({ m }) {
 
 export const Ship3D = memo(function Ship3D({ sel, crewed, shield }) {
   return (
-    <Canvas camera={{ position: [4.6, 2.3, 5.8], fov: 40 }} dpr={[1, 2]} gl={{ toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.1 }}>
+    <GameCanvas camera={{ position: [4.6, 2.3, 5.8], fov: 40 }} gl={{ toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.1 }}>
       <color attach="background" args={['#040817']} />
       <ambientLight intensity={0.2} />
       <directionalLight position={[5, 4, 3]} intensity={2.8} color="#fff6e6" />
       <directionalLight position={[-4, -2, -3]} intensity={0.45} color="#8ab4ff" />
-      <Stars radius={50} depth={30} count={1800} factor={3} fade />
+      <Stars radius={50} depth={30} count={1100} factor={3} fade />
       {/* Studio light panels so foil and metal reflect like in real photos */}
       <Environment resolution={256} frames={1}>
         <Lightformer intensity={3} position={[0, 5, -5]} scale={[10, 3, 1]} />
@@ -363,6 +364,6 @@ export const Ship3D = memo(function Ship3D({ sel, crewed, shield }) {
       <Ship sel={sel} crewed={crewed} shield={shield} />
       <ContactShadows position={[0, -1.75, 0]} opacity={0.3} scale={9} blur={2.5} far={3} />
       <OrbitControls enablePan={false} minDistance={3} maxDistance={11} />
-    </Canvas>
+    </GameCanvas>
   )
 })

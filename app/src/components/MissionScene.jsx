@@ -1,5 +1,6 @@
 import { Suspense, memo, useMemo, useRef } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
+import { useFrame } from '@react-three/fiber'
+import { GameCanvas } from './GameCanvas'
 import { OrbitControls, Stars, useTexture, Environment, Lightformer } from '@react-three/drei'
 import * as THREE from 'three'
 import { Ship } from './Ship3D'
@@ -16,7 +17,7 @@ function World({ id }) {
   return (
     <group position={[0, -7.2, -2]} rotation={[0.35, 0, 0.12]}>
       <mesh ref={ref}>
-        <sphereGeometry args={[6.2, 128, 128]} />
+        <sphereGeometry args={[6.2, 96, 96]} />
         <meshStandardMaterial map={map} roughness={0.95} />
       </mesh>
       <mesh scale={1.015}>
@@ -98,13 +99,13 @@ function Orbiting({ sel, crewed, shield, safe, wobble }) {
   )
 }
 
-export const MissionScene = memo(function MissionScene({ destId, sel, crewed, shield, storm, safe, event }) {
+export const MissionScene = memo(function MissionScene({ destId, sel, crewed, shield, storm, safe, event, paused }) {
   return (
-    <Canvas camera={{ position: [0, 1.6, 6.5], fov: 45 }} dpr={[1, 2]} gl={{ toneMapping: THREE.ACESFilmicToneMapping }}>
+    <GameCanvas paused={paused} camera={{ position: [0, 1.6, 6.5], fov: 45 }} gl={{ toneMapping: THREE.ACESFilmicToneMapping }}>
       <color attach="background" args={['#02040c']} />
       <ambientLight intensity={safe ? 0.08 : 0.15} />
       <directionalLight position={[-6, 4, 5]} intensity={safe ? 1.4 : 2.6} color="#fff4e0" />
-      <Stars radius={80} depth={50} count={3000} factor={3.5} fade speed={0.3} />
+      <Stars radius={80} depth={50} count={1800} factor={3.5} fade speed={0.3} />
       <Environment resolution={128} frames={1}>
         <Lightformer intensity={2} position={[0, 5, -5]} scale={[10, 3, 1]} />
         <Lightformer intensity={1.2} color="#ffd9a0" position={[5, 1, 3]} rotation-y={-Math.PI / 2} scale={[6, 5, 1]} />
@@ -124,6 +125,6 @@ export const MissionScene = memo(function MissionScene({ destId, sel, crewed, sh
       {event === 'blackKnight' && <Knight />}
       {(event === 'delay' || event === 'conjunction' || event === 'earthset') && <SignalPulses />}
       <OrbitControls enablePan={false} enableZoom={false} minPolarAngle={1.1} maxPolarAngle={1.7} minAzimuthAngle={-0.6} maxAzimuthAngle={0.6} />
-    </Canvas>
+    </GameCanvas>
   )
 })

@@ -1,5 +1,6 @@
 import { Suspense, memo, useMemo, useRef } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
+import { useFrame } from '@react-three/fiber'
+import { GameCanvas } from './GameCanvas'
 import { OrbitControls, Stars, useGLTF, useTexture } from '@react-three/drei'
 import * as THREE from 'three'
 import { crewById } from '../data/crew'
@@ -193,16 +194,16 @@ function Deck({ places, sel, shield, systems }) {
   )
 }
 
-export const CrewInterior = memo(function CrewInterior({ crew, plan, event, destId, sel, shield, tasks, systems }) {
+export const CrewInterior = memo(function CrewInterior({ crew, plan, event, destId, sel, shield, tasks, systems, paused }) {
   const places = crewPlaces(crew, { plan, event, tasks })
   const alarm = event === 'solarStorm' || event === 'radiationBelt' || event === 'co2' || event === 'panic'
   return (
-    <Canvas camera={{ position: [15, 21, 21], fov: 40 }} dpr={[1, 2]} gl={{ toneMapping: THREE.ACESFilmicToneMapping }}>
+    <GameCanvas paused={paused} camera={{ position: [15, 21, 21], fov: 40 }} gl={{ toneMapping: THREE.ACESFilmicToneMapping }}>
       <color attach="background" args={['#02040c']} />
       <ambientLight intensity={0.9} />
       <hemisphereLight args={['#e6eeff', '#202638', 0.8]} />
       <directionalLight position={[4, 12, 6]} intensity={1.8} />
-      <Stars radius={120} depth={60} count={3000} factor={4} fade speed={0.3} />
+      <Stars radius={120} depth={60} count={1600} factor={4} fade speed={0.3} />
       {alarm && <AlarmLight />}
       {event === 'co2' && <fog attach="fog" args={['#9fbf7a', 18, 60]} />}
       <Suspense fallback={null}>
@@ -212,7 +213,7 @@ export const CrewInterior = memo(function CrewInterior({ crew, plan, event, dest
         {destId && <WorldBelow destId={destId} />}
       </Suspense>
       <OrbitControls target={[-1, 0, 0]} enablePan={false} minDistance={14} maxDistance={40} minPolarAngle={0.2} maxPolarAngle={1.1} />
-    </Canvas>
+    </GameCanvas>
   )
 })
 

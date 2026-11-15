@@ -1,16 +1,18 @@
-import { useEffect, useState } from 'react'
+import { Suspense, lazy, useEffect, useState } from 'react'
 import { useGame } from './store'
 import { isMuted, setMuted } from './sound'
 import { playMusic } from './music'
 import { useT } from './i18n'
 import Home from './screens/Home'
-import Destination from './screens/Destination'
-import Crew from './screens/Crew'
-import Design from './screens/Design'
-import Review from './screens/Review'
-import Launch from './screens/Launch'
-import Mission from './screens/Mission'
-import Legacy from './screens/Legacy'
+
+// Only the home screen ships in the first download; the rest load when you reach them
+const Destination = lazy(() => import('./screens/Destination'))
+const Crew = lazy(() => import('./screens/Crew'))
+const Design = lazy(() => import('./screens/Design'))
+const Review = lazy(() => import('./screens/Review'))
+const Launch = lazy(() => import('./screens/Launch'))
+const Mission = lazy(() => import('./screens/Mission'))
+const Legacy = lazy(() => import('./screens/Legacy'))
 
 const SCREENS = { home: Home, destination: Destination, crew: Crew, design: Design, review: Review, launch: Launch, mission: Mission, legacy: Legacy }
 const STEP_OF = { destination: 0, crew: 1, design: 2, review: 3, launch: 4, mission: 5, legacy: 6 }
@@ -29,7 +31,9 @@ export default function App() {
     <div className="app">
       <Header />
       <main className="content">
-        <Screen />
+        <Suspense fallback={<div className="screen-loading" />}>
+          <Screen />
+        </Suspense>
       </main>
     </div>
   )

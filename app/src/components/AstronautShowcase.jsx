@@ -1,5 +1,6 @@
 import { Suspense, memo, useMemo, useRef } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
+import { useFrame } from '@react-three/fiber'
+import { GameCanvas } from './GameCanvas'
 import { useGLTF, Stars, ContactShadows } from '@react-three/drei'
 import * as THREE from 'three'
 import { dressAstronaut } from './dressAstronaut'
@@ -49,16 +50,16 @@ function Platform({ color }) {
 export const AstronautShowcase = memo(function AstronautShowcase({ person, pose }) {
   const color = person.color
   return (
-    <Canvas camera={{ position: [0, 1.15, 4.7], fov: 36 }} dpr={[1, 2]} gl={{ toneMapping: THREE.ACESFilmicToneMapping }} onCreated={({ camera }) => camera.lookAt(0, 0.9, 0)}>
+    <GameCanvas camera={{ position: [0, 1.15, 4.7], fov: 36 }} gl={{ toneMapping: THREE.ACESFilmicToneMapping }} onCreated={({ camera }) => camera.lookAt(0, 0.9, 0)}>
       <ambientLight intensity={0.6} />
       <directionalLight position={[2, 4, 3]} intensity={2.4} />
       <directionalLight position={[-3, 2, -2]} intensity={1.2} color={color} />
-      <Stars radius={40} depth={20} count={1200} factor={2.5} fade />
+      <Stars radius={40} depth={20} count={800} factor={2.5} fade />
       <Suspense fallback={null}>
         <Figure person={person} pose={pose} />
       </Suspense>
       <Platform color={color} />
       <ContactShadows position={[0, 0.001, 0]} opacity={0.5} scale={3} blur={2} far={2} />
-    </Canvas>
+    </GameCanvas>
   )
 })

@@ -1,10 +1,11 @@
 import { Suspense, memo, useMemo, useRef } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
+import { useFrame, useThree } from '@react-three/fiber'
+import { GameCanvas } from './GameCanvas'
 import { Stars, useTexture, Environment, Lightformer } from '@react-three/drei'
 import * as THREE from 'three'
 import { Ship } from './Ship3D'
 import { T } from '../logic/launch'
-import { earthMaterial, atmosphereMaterial } from './earthShaders'
+import { earthMaterial, atmosphereMaterial, bakeEarth } from './earthShaders'
 
 // Cinematic launch: dawn at a coastal launch complex, ascent until the sky turns black and
 // Earth's curve appears below, then the cruise to the destination.
@@ -260,17 +261,18 @@ function ShowBetween({ start, from, until, y, children }) {
 // Rolling ground cloud at ignition plus the smoke trail the rocket leaves in the sky
 function Smoke({ start }) {
   const tex = useSprite(SMOKE)
-  const N = 320
+  const N = 220
+  const GROUND = 100
   const mesh = useRef()
   const now = useClock(start)
   const dummy = useMemo(() => new THREE.Object3D(), [])
   const seeds = useMemo(() => Array.from({ length: N }, (_, i) => {
-    const ground = i < 150
+    const ground = i < GROUND
     return {
       ground,
       a: hash(i, 1) * Math.PI * 2,
       v: 0.6 + hash(i, 2) * 1.8,
-      born: ground ? T.ignition - 0.2 + hash(i, 3) * 4 : T.liftoff + 0.6 + ((i - 150) / (N - 150)) * (T.meco - T.liftoff),
+      born: ground ? T.ignition - 0.2 + hash(i, 3) * 4 : T.liftoff + 0.6 + ((i - GROUND) / (N - GROUND)) * (T.meco - T.liftoff),
       s: 0.7 + hash(i, 4) * 1.3,
     }
   }), [])
@@ -307,7 +309,8 @@ function EarthBelow({ start }) {
   const spin = useRef()
   const now = useClock(start)
   // Seen from above, the planet is lit by the Sun higher in the sky
-  const uni = useMemo(() => { const sun = new THREE.Vector3(0.75, 0.35, 0.3).normalize(); return { earth: { sunDir: { value: sun } }, air: { sunDir: { value: sun } } } }, [])
+  const gl = useThree((s) => s.gl)
+  const uni = useMemo(() => { const sun = new THREE.Vector3(0.75, 0.35, 0.3).normalize(); const tex = bakeEarth(gl); return { earth: { sunDir: { value: sun }, surface: { value: tex.surface }, extra: { value: tex.extra } }, air: { sunDir: { value: sun } } } }, [gl])
   useFrame((_, dt) => {
     const t = now()
     const p = pathAt(t)
@@ -364,7 +367,8 @@ function Cruise({ destId, sel, crewed, shield, start }) {
   const now = useClock(start)
   const space = useMemo(() => new THREE.Color('#02040c'), [])
   const sunTex = useSprite(GLOW)
-  const uni = useMemo(() => ({ earth: { sunDir: { value: new THREE.Vector3(1, 0.3, 0.4).normalize() } } }), [])
+  const gl = useThree((s) => s.gl)
+  const uni = useMemo(() => { const tex = bakeEarth(gl, 1024); return { earth: { sunDir: { value: new THREE.Vector3(1, 0.3, 0.4).normalize() }, surface: { value: tex.surface }, extra: { value: tex.extra } } } }, [gl])
   useFrame(({ camera, scene }) => {
     const t = now()
     const on = t >= T.transfer
@@ -430,7 +434,7 @@ function SpaceStars({ start }) {
     ref.current.visible = now() >= CUT
     ref.current.position.copy(camera.position)
   })
-  return <group ref={ref} visible={false}><Stars radius={120} depth={60} count={3500} factor={4} fade /></group>
+  return <group ref={ref} visible={false}><Stars radius={120} depth={60} count={2000} factor={4} fade /></group>
 }
 
 // Warm dawn light that turns into harsh white sunlight in space
@@ -455,7 +459,7 @@ function Lights({ start }) {
 
 export const LaunchScene = memo(function LaunchScene({ kind, destId, sel, crewed, shield, start }) {
   return (
-    <Canvas camera={{ position: [10, 2, 17], fov: 45, far: 2000 }} dpr={[1, 2]} gl={{ toneMapping: THREE.ACESFilmicToneMapping }}>
+    <GameCanvas camera={{ position: [10, 2, 17], fov: 45, far: 2000 }} gl={{ toneMapping: THREE.ACESFilmicToneMapping }}>
       <color attach="background" args={['#02040c']} />
       <Sky start={start} />
       <Lights start={start} />
@@ -470,6 +474,6 @@ export const LaunchScene = memo(function LaunchScene({ kind, destId, sel, crewed
         <Cruise destId={destId} sel={sel} crewed={crewed} shield={shield} start={start} />
       </Suspense>
       <Director start={start} kind={kind} />
-    </Canvas>
+    </GameCanvas>
   )
 })
