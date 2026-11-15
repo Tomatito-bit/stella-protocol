@@ -844,3 +844,27 @@ h2 { font-size: 26px; }
 .logbook > .page { height: 100%; min-height: 0; max-height: none; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; scrollbar-color: rgba(35, 38, 74, 0.3) transparent; }
 .flip-face { height: 100%; overflow: hidden; }
 @media (max-width: 900px) { .logbook { height: auto; max-height: calc(100dvh - 24px); grid-template-rows: auto; } .logbook > .page { height: auto; } }
+
+/* ---------- Phones: nothing wider than the screen, 3D view visible, logbook fits ---------- */
+html, body { overflow-x: hidden; }
+@media (max-width: 900px) {
+  .app { max-width: 100vw; overflow-x: hidden; }
+  .header { padding: 8px 12px; gap: 8px; }
+  .header .brand { font-size: 15px; }
+  .header-tools .lang { padding: 6px 10px; font-size: 12px; }
+  .select-info { max-width: 100%; padding: 0 16px; box-sizing: border-box; }
+  .select-info p, .crew-bio, .crew-past, .quote-big { max-width: 100%; overflow-wrap: anywhere; }
+  .mission { display: block; height: auto; }
+  .mission-view { height: 70dvh !important; min-height: 420px; }
+  .hud.top { flex-wrap: wrap; }
+  .modal-bg.logbook-bg { padding: 8px; align-items: flex-start; overflow-y: auto; }
+  .logbook { width: calc(100vw - 16px) !important; height: auto !important; max-height: none !important; overflow: visible; }
+  .logbook > .page { padding: 18px 14px 14px 26px !important; overflow: visible; }
+  .page.left::before { left: 18px; }
+  .calendar { max-width: 100%; }
+  .crew-photos { gap: 10px; }
+  .page-dots { position: static; transform: none; justify-content: center; margin: 6px 0; }
+  .live-alert { top: 110px; width: calc(100% - 32px); }
+  .home-console h1 { font-size: 34px; }
+  .home-console .eyebrow { font-size: 10px; }
+}

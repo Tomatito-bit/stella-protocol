@@ -13,6 +13,7 @@ const SAMPLE = {
 export function loadDemo() {
   const q = new URLSearchParams(location.search)
   const screen = q.get('demo')
+  if (q.get('lang')) useGame.setState({ lang: q.get('lang') })
   if (!screen) return
   const dest = q.get('dest') || 'mars'
   const LITE = { solar: 0, rtg: 1, engine: 1, tank: 3, hga: 1, camera: 1, eclss: 1, supplies: 1, spares: 1 }
@@ -41,4 +42,18 @@ if (coverAt) {
   const st = document.createElement('style')
   st.textContent = `.logbook, .cover-face, .open-mask { animation-play-state: paused !important; animation-delay: -${coverAt}s !important; }`
   document.head.appendChild(st)
+}
+
+// Dev only: ?widthcheck lists elements wider than the screen (for phone layouts)
+if (new URLSearchParams(location.search).has('widthcheck')) {
+  setTimeout(() => {
+    const w = document.documentElement.clientWidth
+    console.log('WIDTH viewport', w, 'innerWidth', innerWidth)
+    const seen = new Set()
+    document.querySelectorAll('body *').forEach((e) => {
+      const r = e.getBoundingClientRect()
+      const key = `${e.tagName}.${e.className}`
+      if (r.right > w + 2 && !seen.has(key) && seen.size < 15) { seen.add(key); console.log('WIDE', key, Math.round(r.left), Math.round(r.right)) }
+    })
+  }, 2500)
 }

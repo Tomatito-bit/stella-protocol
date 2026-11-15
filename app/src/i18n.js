@@ -1,7 +1,7 @@
 import { useGame } from './store'
 
 // UI strings in both languages. Data files carry their own { es, en } texts.
-const STRINGS = {
+export const STRINGS = {
   es: {
     title: 'Stella Protocol',
     tagline: 'Diseña una misión real de la NASA, defiéndela ante el panel GO / NO-GO y vívela día con día como Director de Vuelo.',
