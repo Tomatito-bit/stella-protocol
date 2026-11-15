@@ -3,6 +3,7 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls, Stars, useTexture, Environment, Lightformer } from '@react-three/drei'
 import * as THREE from 'three'
 import { Ship } from './Ship3D'
+import { Meteors, DustStorm, Plume, Beacon, SignalPulses } from './LiveEffects'
 
 // The mission happens AT the chosen world: its real NASA map fills the view below the spacecraft.
 const MAPS = { moon: '/textures/moon.jpg', mars: '/textures/mars.jpg', europa: '/textures/europa.jpg' }
@@ -76,7 +77,7 @@ function Storm() {
   )
 }
 
-function Orbiting({ sel, crewed, shield, safe }) {
+function Orbiting({ sel, crewed, shield, safe, wobble }) {
   const ref = useRef()
   // The craft really orbits: it rises over the planet's limb, crosses the sky and sets again
   useFrame(({ clock }) => {
@@ -85,7 +86,9 @@ function Orbiting({ sel, crewed, shield, safe }) {
     const R = 8.1
     if (ref.current) {
       ref.current.position.set(Math.sin(a) * R, -7.2 + Math.cos(a) * R, -0.6 + Math.sin(t * 0.2) * 0.2)
-      ref.current.rotation.set(0, safe ? 0 : t * 0.05, -a * 0.9)
+      // A failing gyroscope makes the craft wobble off its pointing
+      const w = wobble ? Math.sin(t * 2.3) * 0.25 : 0
+      ref.current.rotation.set(w, safe ? 0 : t * 0.05 + w, -a * 0.9 + w * 0.5)
     }
   })
   return (
@@ -95,7 +98,7 @@ function Orbiting({ sel, crewed, shield, safe }) {
   )
 }
 
-export const MissionScene = memo(function MissionScene({ destId, sel, crewed, shield, storm, safe }) {
+export const MissionScene = memo(function MissionScene({ destId, sel, crewed, shield, storm, safe, event }) {
   return (
     <Canvas camera={{ position: [0, 1.6, 6.5], fov: 45 }} dpr={[1, 2]} gl={{ toneMapping: THREE.ACESFilmicToneMapping }}>
       <color attach="background" args={['#02040c']} />
@@ -110,8 +113,13 @@ export const MissionScene = memo(function MissionScene({ destId, sel, crewed, sh
         <World id={destId} />
         {destId === 'europa' && <Jupiter />}
       </Suspense>
-      <Orbiting sel={sel} crewed={crewed} shield={shield} safe={safe} />
+      <Orbiting sel={sel} crewed={crewed} shield={shield} safe={safe} wobble={event === 'gyro' || event === 'transistor'} />
       {storm && <Storm />}
+      {event === 'micrometeoroid' && <Meteors />}
+      {(event === 'dustStorm' || event === 'dustDevil' || event === 'dust') && <DustStorm />}
+      {event === 'plume' && <Plume />}
+      {(event === 'opportunity' || event === 'shadowIce') && <Beacon color={event === 'shadowIce' ? '#bfe9ff' : '#ffd166'} />}
+      {(event === 'delay' || event === 'conjunction' || event === 'earthset') && <SignalPulses />}
       <OrbitControls enablePan={false} enableZoom={false} minPolarAngle={1.1} maxPolarAngle={1.7} minAzimuthAngle={-0.6} maxAzimuthAngle={0.6} />
     </Canvas>
   )

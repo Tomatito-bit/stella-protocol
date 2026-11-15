@@ -16,11 +16,11 @@ const ORDERS = ['rest', 'medical', 'exercise', 'talk']
 
 export default function Mission() {
   const { t, L } = useT()
-  const { mission: m, plan, event, journalOpen, openJournal, tasks } = useGame()
+  const { mission: m, plan, event, journalOpen, openJournal, tasks, live, view: storeView, setView } = useGame()
   const dest = destinationById[useGame((s) => s.destinationId)]
   const storm = event === 'solarStorm' || event === 'radiationBelt'
   const pct = Math.min(100, Math.round((m.science / m.goal) * 100))
-  const [view, setView] = useState(() => (import.meta.env.DEV && new URLSearchParams(location.search).has('inside') ? 'crew' : 'ship'))
+  const view = storeView
   const inside = !!m.crew && view === 'crew'
   // Life-support fans hum in the background during the mission
   useEffect(() => { startHum(); return stopHum }, [])
@@ -30,7 +30,7 @@ export default function Mission() {
       <div className="mission-view">
         {inside
           ? <CrewInterior crew={m.crew} plan={plan} event={event} destId={dest.id} sel={m.parts} shield={m.shield} tasks={tasks} systems={m.systems} />
-          : <MissionScene destId={dest.id} sel={m.parts} crewed={dest.crewed} shield={m.shield} storm={storm} safe={plan === 'rest'} />}
+          : <MissionScene destId={dest.id} sel={m.parts} crewed={dest.crewed} shield={m.shield} storm={storm} safe={plan === 'rest'} event={event} />}
         {m.crew && (
           <div className="view-toggle">
             <button className={!inside ? 'on' : ''} onClick={() => setView('ship')}>{t('viewShip')}</button>
@@ -71,6 +71,7 @@ export default function Mission() {
             <b>{t('day')} {m.day + 1}</b>
           </div>
         )}
+        {live && !journalOpen && <LiveAlert event={live} onOpen={openJournal} />}
         {!journalOpen && (
           <ClosedLogbook day={m.day + 1} pending={!!event} onOpen={openJournal} />
         )}
@@ -143,6 +144,26 @@ function TaskSelect({ c }) {
       {['science', 'comms', 'medbay', 'exercise', 'recycle', 'eva', 'rest'].map((k) => <option key={k} value={k}>{L(TASKS[k].name)}</option>)}
       {Object.entries(m.systems).map(([id, v]) => <option key={id} value={`repair:${id}`}>{L(TASKS.repair.name)}: {L(SYSTEMS[id].name)} ({Math.round(v)}%)</option>)}
     </select>
+  )
+}
+
+// Breaking news on board: the event plays out in 3D, then the logbook opens so you can decide
+function LiveAlert({ event, onOpen }) {
+  const { t, L } = useT()
+  const ev = EVENTS[event]
+  useEffect(() => {
+    const id = setTimeout(onOpen, 6000)
+    return () => clearTimeout(id)
+  }, [event, onOpen])
+  if (!ev) return null
+  return (
+    <div className={`live-alert ${ev.tier ? 'social' : ''}`} key={event}>
+      <span className="live-dot" /> <span className="live-tag">{t('liveNow')}</span>
+      <h3>{L(ev.title)}</h3>
+      <p>{L(ev.text)}</p>
+      <button className="btn glow" onClick={onOpen}>{t('decideNow')} →</button>
+      <i className="live-timer" />
+    </div>
   )
 }
 
@@ -251,27 +272,55 @@ function Logbook() {
   const spreads = m.systems
     ? [['report', 'crew'], ['supplies', 'event'], ['tasks', 'plan']]
     : m.crew ? [['report', 'crew'], ['event', 'plan']] : [['report', 'supplies'], ['event', 'plan']]
-  const turn = (k) => { sfx.page(); setSpread(spread + k) }
-  const [left, right] = spreads[spread]
+  // A real page turn: the sheet swings over the spiral showing the old page on its front and the new one on its back
+  const [flip, setFlip] = useState(null) // { to, dir }
+  // Dev only: ?flipat=0.35 freezes a forward turn mid-way to check how it looks
+  const freeze = import.meta.env.DEV ? new URLSearchParams(location.search).get('flipat') : null
+  const [frozen] = useState(() => (freeze ? { to: 1, dir: 1 } : null))
+  const active = flip || frozen
+  const turn = (k) => {
+    if (flip || k === 0) return
+    sfx.page()
+    setFlip({ to: spread + k, dir: k > 0 ? 1 : -1 })
+  }
+  const done = () => { setSpread(flip.to); setFlip(null) }
+  const [cl, cr] = spreads[spread]
+  const [nl, nr] = active ? spreads[active.to] : [cl, cr]
+  // Underneath the moving sheet the destination page is already in place
+  const left = active && active.dir < 0 ? nl : cl
+  const right = active && active.dir > 0 ? nr : cr
+  const nav = (side, kind, idx) => (
+    side === 'left'
+      ? <div className="page-turn">{idx > 0 ? <button onClick={() => turn(-1)}>← {t('prevPage')}</button> : <button onClick={closeJournal}>{t('lookAround')}</button>}</div>
+      : <div className="page-turn right">{idx < spreads.length - 1 && <button onClick={() => turn(1)}>{t('nextPage')} →</button>}</div>
+  )
+  const leftIdx = active && active.dir < 0 ? active.to : spread
+  const rightIdx = active && active.dir > 0 ? active.to : spread
   return (
     <div className="modal-bg logbook-bg">
       <div className="logbook" style={{ '--cover': cover.color }}>
         <div className="cover-opening" aria-hidden />
         <div className="rings" aria-hidden />
-        <div className="page left" key={`l${spread}`}>
+        <div className="page left" key={`l-${left}`}>
           <LogPage kind={left} />
-          <div className="page-turn">
-            {spread > 0 ? <button onClick={() => turn(-1)}>← {t('prevPage')}</button> : <button onClick={closeJournal}>{t('lookAround')}</button>}
-          </div>
+          {nav('left', left, leftIdx)}
         </div>
-        <div className={`page right turning`} key={`r${spread}`}>
+        <div className="page right" key={`r-${right}`}>
           <LogPage kind={right} />
-          <div className="page-turn right">
-            {spread < spreads.length - 1 && <button onClick={() => turn(1)}>{t('nextPage')} →</button>}
-          </div>
+          {nav('right', right, rightIdx)}
         </div>
+        {active && (
+          <div className={`flip-sheet ${active.dir > 0 ? 'fwd' : 'back'}`} onAnimationEnd={flip ? done : undefined} style={frozen ? { animationDelay: `-${freeze}s`, animationPlayState: 'paused' } : undefined} aria-hidden>
+            <div className={`page flip-face front ${active.dir > 0 ? 'right' : 'left'}`}>
+              <LogPage kind={active.dir > 0 ? cr : cl} />
+            </div>
+            <div className={`page flip-face rear ${active.dir > 0 ? 'left' : 'right'}`}>
+              <LogPage kind={active.dir > 0 ? nl : nr} />
+            </div>
+          </div>
+        )}
         <div className="page-dots">
-          {spreads.map((_, i) => <button key={i} className={i === spread ? 'on' : ''} onClick={() => i !== spread && turn(i - spread)} aria-label={`${i + 1}`} />)}
+          {spreads.map((_, i) => <button key={i} className={i === (flip ? flip.to : spread) ? 'on' : ''} onClick={() => turn(i - spread)} aria-label={`${i + 1}`} />)}
         </div>
       </div>
     </div>

@@ -204,6 +204,7 @@ export const CrewInterior = memo(function CrewInterior({ crew, plan, event, dest
       <directionalLight position={[4, 12, 6]} intensity={1.8} />
       <Stars radius={120} depth={60} count={3000} factor={4} fade speed={0.3} />
       {alarm && <AlarmLight />}
+      {event === 'co2' && <fog attach="fog" args={['#9fbf7a', 18, 60]} />}
       <Suspense fallback={null}>
         <Drift>
           <Deck places={places} sel={sel} shield={shield} systems={systems} />

@@ -28,7 +28,7 @@ export function loadDemo() {
     for (let i = 0; i < days && !m.over; i++) m = nextDay(m, d, base.commanderId, 'science', null, { tasks: m.crew ? defaultTasks(m) : null })
     const tasks = m.crew ? defaultTasks(m) : null
     if (tasks && q.get('plan') === 'rest') Object.keys(tasks).forEach((k) => { tasks[k] = 'rest' })
-    useGame.setState({ ...base, screen, mission: m, tasks, ration: false, event: q.get('event'), journalOpen: q.has('logbook'), plan: q.get('plan') || 'science' })
+    useGame.setState({ ...base, screen, mission: m, tasks, ration: false, event: q.get('event'), journalOpen: q.has('logbook'), live: q.has('live') ? q.get('event') : null, view: q.has('inside') ? 'crew' : 'ship', plan: q.get('plan') || 'science' })
 
     return
   }

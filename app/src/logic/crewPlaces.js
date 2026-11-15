@@ -25,6 +25,11 @@ export function crewPlaces(crew, { plan, event, tasks }) {
   // Two people at the same spot stand side by side instead of on top of each other
   const at = (c, spot, mode) => { const k = crowd[spot] = (crowd[spot] || 0) + 1; return { id: c.id, spot, offset: [(k - 1) * 0.8 - (k > 1 ? 0.4 : 0), (k - 1) * 0.5], mode } }
   return crew.map((c, i) => {
+    if (event === 'homeMessage' || event === 'harvest') return at(c, 'Spot_commons', 'idle')
+    if (event === 'drill' || event === 'gravity') return at(c, 'Room_Airlock', 'work')
+    if (event === 'medical' && i === 1) return { id: c.id, spot: 'Spot_doctor', offset: [0.6, 0], mode: 'sleep' }
+    if (event === 'medical' && c.duty === 'doctor') return at(c, 'Spot_doctor', 'work')
+    if (event === 'co2' && c.duty === 'engineer') return at(c, 'Shelter', 'work')
     if (storm) return { id: c.id, spot: 'Shelter', offset: [(i % 2) * 0.9 - 0.45, Math.floor(i / 2) * 0.9], mode: 'idle' }
     if (panic) return { id: c.id, spot: ['Spot_engineer', 'Spot_pilot', 'Spot_doctor', 'Spot_scientist'][i % 4], offset: [0, 0], mode: 'argue' }
     const job = tasks && (tasks[c.id] || 'rest').split(':')
