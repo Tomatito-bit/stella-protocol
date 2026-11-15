@@ -963,3 +963,4 @@ html, body { overflow-x: hidden; }
 .logbook.opening > .page.left, .logbook.opening > .page-dots, .logbook.opening > .spread-nav, .logbook.opening > .rings { opacity: 0; }
 .logbook > .page.left, .logbook > .rings, .logbook > .spread-nav { transition: opacity 0.2s; }
 .cover-opening { pointer-events: none; }
+.spread-flow .calendar { max-width: calc(100% - 160px); }
