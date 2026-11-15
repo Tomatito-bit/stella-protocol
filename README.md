@@ -2,6 +2,10 @@
 
 Challenge: **Space Mission Design Game**. Dates: Saturday, November 14 and Sunday, November 15, 2026.
 
+## ▶ Play now: https://stella-protocol.vercel.app
+
+Runs in any modern browser (desktop or phone). The game opens in English; the **Español** button switches language.
+
 > This is the English repository. A Spanish twin exists with the same content.
 
 ## Folder structure
