@@ -8,8 +8,9 @@ g.getState().launch()
 let days = 0
 while (g.getState().screen === 'mission' && days < 40) {
   const s = g.getState()
-  // A morning with an event is first shown live; otherwise the logbook opens straight away
-  if (!s.journalOpen && !(s.event && s.live === s.event)) throw new Error('logbook should open (or the event play live) every morning')
+  // Each morning the logbook is closed: you watch the day start (and any event live), then open it
+  if (s.mission.day > 0 && s.journalOpen) throw new Error('the logbook should close when a new day starts')
+  if (s.event && s.live !== s.event) throw new Error('today’s event should play live first')
   if (!s.journalOpen) s.openJournal()
   if (g.getState().live) throw new Error('opening the logbook should end the live alert')
   if (s.event) {

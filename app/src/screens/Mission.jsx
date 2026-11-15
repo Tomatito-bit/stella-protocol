@@ -155,7 +155,7 @@ function LiveAlert({ event, onOpen }) {
   const { t, L } = useT()
   const ev = EVENTS[event]
   useEffect(() => {
-    const id = setTimeout(onOpen, 6000)
+    const id = setTimeout(onOpen, 8000)
     return () => clearTimeout(id)
   }, [event, onOpen])
   if (!ev) return null
@@ -272,6 +272,9 @@ function Logbook() {
   const { mission: m, closeJournal } = useGame()
   const cover = useCover()
   const [spread, setSpread] = useState(() => (import.meta.env.DEV ? Number(new URLSearchParams(location.search).get('lpage')) || 0 : 0))
+  // While the cover swings open, the left page stays hidden under it
+  const [opening, setOpening] = useState(true)
+  useEffect(() => { const id = setTimeout(() => setOpening(false), 380); return () => clearTimeout(id) }, [])
   const spreads = m.systems
     ? [['report', 'crew'], ['supplies', 'event'], ['tasks', 'plan']]
     : m.crew ? [['report', 'crew'], ['event', 'plan']] : [['report', 'supplies'], ['event', 'plan']]
@@ -301,9 +304,8 @@ function Logbook() {
   const rightIdx = active && active.dir > 0 ? active.to : spread
   return (
     <div className="modal-bg logbook-bg">
-      <div className="logbook" style={{ '--cover': cover.color }}>
+      <div className={`logbook ${opening ? 'opening' : ''}`} style={{ '--cover': cover.color }}>
         {/* Opening: the cover swings open over the spiral while the left page is revealed */}
-        <div className="open-mask" aria-hidden />
         <div className="cover-opening" aria-hidden>
           <div className="cover-face front"><span>{t('journal')}</span><b>{t('day')} {m.day + 1}</b></div>
           <div className="cover-face back" />

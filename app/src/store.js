@@ -47,7 +47,7 @@ export const useGame = create((set, get) => ({
     const mission = startMission(dest, s.selection, s.launcherId, s.tests, s.commanderId, Math.floor(Math.random() * 1e9))
     // 60 Parsecs-style loop: each morning the logbook opens with today's problem already waiting
     const event = rollEvent(mission, dest, s.commanderId)
-    set({ mission, plan: 'science', tasks: mission.crew ? defaultTasks(mission) : null, ration: false, event, live: event, view: event ? viewFor(event, !!mission.crew) : 'ship', pick: null, orderPick: null, journalOpen: !event, screen: 'mission' })
+    set({ mission, plan: 'science', tasks: mission.crew ? defaultTasks(mission) : null, ration: false, event, live: event, view: event ? viewFor(event, !!mission.crew) : mission.crew ? 'crew' : 'ship', pick: null, orderPick: null, journalOpen: !event, screen: 'mission' })
   },
   journalOpen: false,
   live: null, // today's event, shown in the 3D scene before the logbook opens
@@ -82,7 +82,8 @@ export const useGame = create((set, get) => ({
     else if (m.voiceBack && !s.mission.voiceBack) sfx.good()
     else sfx.day()
     // With an event, you first watch it happen; the logbook opens a few seconds later
-    set({ mission: m, tasks: m.crew ? carryTasks(s.tasks, m) : null, event, live: event, view: event ? viewFor(event, !!m.crew) : s.view, pick: null, orderPick: null, journalOpen: !event })
+    // The logbook closes: dawn breaks and you watch the crew go to work (or the event unfold); you open the logbook yourself
+    set({ mission: m, tasks: m.crew ? carryTasks(s.tasks, m) : null, event, live: event, view: event ? viewFor(event, !!m.crew) : m.crew ? 'crew' : 'ship', pick: null, orderPick: null, journalOpen: false })
   },
 
   restart: () => set({ screen: 'home', destinationId: null, commanderId: null, selection: {}, launcherId: null, tests: [], mission: null, event: null, pick: null, orderPick: null, journalOpen: false }),
