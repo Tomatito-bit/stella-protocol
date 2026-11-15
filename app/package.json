@@ -8,7 +8,8 @@
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "check": "node --import ./scripts/hooks.mjs scripts/check-all.mjs && node --import ./scripts/hooks.mjs scripts/check-loop.mjs"
+    "check": "node --import ./scripts/hooks.mjs scripts/check-all.mjs && node --import ./scripts/hooks.mjs scripts/check-loop.mjs",
+    "check:ui": "node scripts/check-ui.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.9",

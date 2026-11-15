@@ -374,7 +374,7 @@ function HandBar({ label, v }) {
 
 // The crew, as taped photos (rendered in Blender) that change with how each person is doing
 function CrewPage() {
-  const { t } = useT()
+  const { t, L } = useT()
   const { mission: m, tasks } = useGame()
   const word = (v, hi, mid, lo) => (v > 66 ? hi : v > 33 ? mid : lo)
   return (
