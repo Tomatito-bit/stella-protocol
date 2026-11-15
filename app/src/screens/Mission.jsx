@@ -1,4 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { startHum, stopHum } from '../sound'
+import { TUTORIAL } from '../data/tutorial'
 import { useGame } from '../store'
 import { useT } from '../i18n'
 import { destinationById } from '../data/destinations'
@@ -7,24 +9,27 @@ import { EVENTS } from '../data/events'
 import { biometrics } from '../logic/mission'
 import { MissionScene } from '../components/MissionScene'
 import { CrewInterior } from '../components/CrewInterior'
+import { TASKS, SYSTEMS, BROKEN, taskKind, powerLevel } from '../logic/ship'
 
 const PLANS = ['science', 'transmit', 'rest']
 const ORDERS = ['rest', 'medical', 'exercise', 'talk']
 
 export default function Mission() {
   const { t, L } = useT()
-  const { mission: m, plan, event, journalOpen, openJournal } = useGame()
+  const { mission: m, plan, event, journalOpen, openJournal, tasks } = useGame()
   const dest = destinationById[useGame((s) => s.destinationId)]
   const storm = event === 'solarStorm' || event === 'radiationBelt'
   const pct = Math.min(100, Math.round((m.science / m.goal) * 100))
   const [view, setView] = useState(() => (import.meta.env.DEV && new URLSearchParams(location.search).has('inside') ? 'crew' : 'ship'))
   const inside = !!m.crew && view === 'crew'
+  // Life-support fans hum in the background during the mission
+  useEffect(() => { startHum(); return stopHum }, [])
 
   return (
     <section className="mission">
       <div className="mission-view">
         {inside
-          ? <CrewInterior crew={m.crew} plan={plan} event={event} destId={dest.id} sel={m.parts} shield={m.shield} />
+          ? <CrewInterior crew={m.crew} plan={plan} event={event} destId={dest.id} sel={m.parts} shield={m.shield} tasks={tasks} systems={m.systems} />
           : <MissionScene destId={dest.id} sel={m.parts} crewed={dest.crewed} shield={m.shield} storm={storm} safe={plan === 'rest'} />}
         {m.crew && (
           <div className="view-toggle">
@@ -41,13 +46,31 @@ export default function Mission() {
             <span className="hud-label">{t('science')} {Math.round(m.science)} / {m.goal}</span>
             <div className="bar"><div style={{ width: `${pct}%` }} /></div>
           </div>
-          <Stat label={t('dose')} value={`${m.dose.toFixed(1)} mSv`} />
-          <Stat label={t('electronics')} value={`${Math.round(m.electronics)}%`} bad={m.electronics < 50} />
-          <Stat label={t('fuel')} value={m.spareTanks} />
-          <Stat label={t('sparesShort')} value={m.spares} />
-          {m.crew && <Stat label={t('supplies')} value={`${m.supplies} d`} bad={m.supplies < 3} />}
+          {m.systems ? (
+            <>
+              <Meter label="O₂" v={m.o2} />
+              <Meter label={t('water')} v={m.water} />
+              <Stat label={t('supplies')} value={`${Math.floor(m.supplies)} d`} bad={m.supplies < 3} />
+              <Meter label={t('powerHud')} v={powerLevel(m, dest) * 100} />
+              <Stat label={t('sparesShort')} value={m.spares} bad={m.spares === 0} />
+              <Stat label={t('dose')} value={`${m.dose.toFixed(1)} mSv`} />
+            </>
+          ) : (
+            <>
+              <Stat label={t('dose')} value={`${m.dose.toFixed(1)} mSv`} />
+              <Stat label={t('electronics')} value={`${Math.round(m.electronics)}%`} bad={m.electronics < 50} />
+              <Stat label={t('fuel')} value={m.spareTanks} />
+              <Stat label={t('sparesShort')} value={m.spares} />
+            </>
+          )}
           {dest.delayMin > 1 && <Stat label={t('delay')} value={`${dest.delayMin} min`} />}
         </div>
+        {m.day > 0 && !m.over && (
+          <div className="day-flash" key={m.day} aria-hidden>
+            <small>{t('dawn')}</small>
+            <b>{t('day')} {m.day + 1}</b>
+          </div>
+        )}
         {!journalOpen && (
           <ClosedLogbook day={m.day + 1} pending={!!event} onOpen={openJournal} />
         )}
@@ -56,6 +79,7 @@ export default function Mission() {
       <aside className="mission-panel">
         {m.crew ? (
           <>
+            <SystemsPanel />
             <h3>{t('crewHud')}</h3>
             <div className="crew-list">
               {m.crew.map((c) => <CrewCard key={c.id} c={c} day={m.day} />)}
@@ -71,7 +95,77 @@ export default function Mission() {
       </aside>
 
       {journalOpen && <Logbook />}
+      {m.systems && m.day === 0 && <Tutorial />}
     </section>
+  )
+}
+
+// Resource gauge that turns amber and then red as it runs low
+function Meter({ label, v }) {
+  const level = v < 25 ? 'bad' : v < 50 ? 'mid' : ''
+  return (
+    <div className={`hud-box meter ${level}`}>
+      <span className="hud-label">{label}</span>
+      <b>{Math.round(v)}%</b>
+      <div className="bar"><div style={{ width: `${Math.max(0, Math.min(100, v))}%` }} /></div>
+    </div>
+  )
+}
+
+// Ship systems: wear down every day, break suddenly, and get fixed by sending someone to repair
+function SystemsPanel() {
+  const { t, L } = useT()
+  const { mission: m, setTask } = useGame()
+  const engineer = m.crew.find((c) => c.duty === 'engineer') || m.crew[0]
+  return (
+    <div className="systems">
+      <h3>{t('systemsHud')}</h3>
+      {Object.entries(m.systems).map(([id, v]) => (
+        <div key={id} className={`system-row ${v < BROKEN ? 'broken' : v < 60 ? 'worn' : ''}`}>
+          <span className="system-name">{L(SYSTEMS[id].name)}</span>
+          <div className="bar"><div style={{ width: `${v}%` }} /></div>
+          <b>{v < BROKEN ? t('brokenShort') : `${Math.round(v)}%`}</b>
+          {v < 85 && <button className="sys-fix" onClick={() => setTask(engineer.id, `repair:${id}`)} title={t('sendEngineer')}>{t('fixShort')}</button>}
+        </div>
+      ))}
+      {!m.voiceBack && <p className="small story-goal">{t('goalAntenna')}</p>}
+    </div>
+  )
+}
+
+// The job a crew member does today, picked from a list (repairs name the system and its state)
+function TaskSelect({ c }) {
+  const { L } = useT()
+  const { mission: m, tasks, setTask } = useGame()
+  const value = (tasks && tasks[c.id]) || 'rest'
+  return (
+    <select className={`task-select task-${taskKind(value)}`} value={value} onChange={(e) => setTask(c.id, e.target.value)} onClick={(e) => e.stopPropagation()}>
+      {['science', 'comms', 'medbay', 'exercise', 'recycle', 'eva', 'rest'].map((k) => <option key={k} value={k}>{L(TASKS[k].name)}</option>)}
+      {Object.entries(m.systems).map(([id, v]) => <option key={id} value={`repair:${id}`}>{L(TASKS.repair.name)}: {L(SYSTEMS[id].name)} ({Math.round(v)}%)</option>)}
+    </select>
+  )
+}
+
+// Shown once, on the first crewed mission
+function Tutorial() {
+  const { t, L } = useT()
+  const [step, setStep] = useState(() => { try { return localStorage.getItem('stella-tutorial') === 'done' ? -1 : 0 } catch { return 0 } })
+  if (step < 0) return null
+  const finish = () => { try { localStorage.setItem('stella-tutorial', 'done') } catch { /* private mode */ } setStep(-1) }
+  const card = TUTORIAL[step]
+  return (
+    <div className="tutorial-bg">
+      <div className="tutorial">
+        <p className="eyebrow">{t('tutorial')} · {step + 1} / {TUTORIAL.length}</p>
+        <h3>{L(card.title)}</h3>
+        <p>{L(card.text)}</p>
+        <div className="tutorial-dots">{TUTORIAL.map((_, i) => <i key={i} className={i === step ? 'on' : ''} />)}</div>
+        <div className="tutorial-actions">
+          <button className="link" onClick={finish}>{t('skipTutorial')}</button>
+          <button className="btn glow" onClick={() => (step + 1 < TUTORIAL.length ? setStep(step + 1) : finish())}>{step + 1 < TUTORIAL.length ? t('next') : t('gotIt')} →</button>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -98,6 +192,7 @@ function CrewCard({ c, day }) {
           <span>{bio.pressure}</span>
         </span>
       </div>
+      {useGame.getState().mission?.systems && <div className="crew-task"><span>{t('taskToday')}</span><TaskSelect c={c} /></div>}
       <div className="vitals">
         <Vital label={t('health')} v={c.health} />
         <Vital label={t('morale')} v={c.morale} />
@@ -157,7 +252,7 @@ function ClosedLogbook({ day, pending, onOpen }) {
 
 function Logbook() {
   const { t, L } = useT()
-  const { mission: m, event, pick, orderPick, plan, setPlan, pickOption, pickOrder, startDay, closeJournal } = useGame()
+  const { mission: m, event, pick, orderPick, plan, setPlan, pickOption, pickOrder, startDay, closeJournal, tasks, suggestTasks, ration, toggleRation } = useGame()
   const destId = useGame((s) => s.destinationId)
   const cover = useCover()
   const [back, setBack] = useState(0) // pages back in history
@@ -194,7 +289,7 @@ function Logbook() {
           )}
           {back === 0 && (
             <p className="hand muted resources">
-              {m.crew ? `${t('supplies')}: ${m.supplies} d · ` : ''}{t('sparesShort')}: {m.spares} · {t('fuel')}: {m.spareTanks} · {t('electronics')}: {Math.round(m.electronics)}%
+              {m.systems ? `O₂ ${Math.round(m.o2)}% · ${t('water')} ${Math.round(m.water)}% · ` : ''}{m.crew ? `${t('supplies')}: ${Math.floor(m.supplies)} d · ` : ''}{t('sparesShort')}: {m.spares} · {t('fuel')}: {m.spareTanks} · {t('electronics')}: {Math.round(m.electronics)}%
             </p>
           )}
           <div className="page-nav">
@@ -231,14 +326,34 @@ function Logbook() {
             <p className="hand calm">{t('noEvent')}</p>
           )}
 
-          <h4>{t('todaysPlan')}</h4>
-          <div className="hand-row">
-            {PLANS.map((p) => (
-              <button key={p} className={`chip-hand ${plan === p ? 'on' : ''}`} onClick={() => setPlan(p)}>{t(`plan_${p}`)}</button>
-            ))}
-          </div>
+          {m.systems ? (
+            <>
+              <h4>{t('tasksToday')} <button className="link dark small-link" onClick={suggestTasks}>{t('suggest')}</button></h4>
+              <div className="task-grid">
+                {m.crew.map((c) => (
+                  <div key={c.id} className="task-line">
+                    <b style={{ color: crewById[c.id].color }}>{crewById[c.id].name.split(' ')[0]}</b>
+                    <TaskSelect c={c} />
+                    <small>{L(TASKS[taskKind(tasks && tasks[c.id])].tip)}</small>
+                  </div>
+                ))}
+              </div>
+              <label className="ration hand">
+                <input type="checkbox" checked={ration} onChange={toggleRation} /> {t('rationLabel')}
+              </label>
+            </>
+          ) : (
+            <>
+              <h4>{t('todaysPlan')}</h4>
+              <div className="hand-row">
+                {PLANS.map((p) => (
+                  <button key={p} className={`chip-hand ${plan === p ? 'on' : ''}`} onClick={() => setPlan(p)}>{t(`plan_${p}`)}</button>
+                ))}
+              </div>
+            </>
+          )}
 
-          {m.crew && (
+          {m.crew && !m.systems && (
             <>
               <h4>{t('crewOrder')}</h4>
               <div className="order-grid">

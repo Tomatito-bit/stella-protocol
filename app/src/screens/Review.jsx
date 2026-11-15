@@ -5,6 +5,7 @@ import { destinationById } from '../data/destinations'
 import { summarize } from '../logic/budget'
 import { reviewBoard } from '../logic/review'
 import { Ship3D } from '../components/Ship3D'
+import { sfx } from '../sound'
 
 // Real Mission Control call signs for each console
 const CALL = { budget: 'BUDGET', fido: 'FIDO', power: 'EECOM', comms: 'INCO', science: 'SCIENCE', surgeon: 'SURGEON', radiation: 'SRAG' }
@@ -23,10 +24,19 @@ export default function Review() {
   const total = board.consoles.length
   const done = polled >= total
 
+  // Each console answers with a tone: high for GO, low buzz for NO-GO
+  const votes = board.consoles.map((c) => (c.go ? 1 : 0)).join('')
   useEffect(() => {
-    const id = setInterval(() => setPolled((n) => (n >= total ? n : n + 1)), POLL_MS)
+    let n = 0
+    const id = setInterval(() => {
+      if (n >= votes.length) return clearInterval(id)
+      if (votes[n] === '1') sfx.go()
+      else sfx.nogo()
+      n += 1
+      setPolled(n)
+    }, POLL_MS)
     return () => clearInterval(id)
-  }, [total])
+  }, [votes])
 
   const gauges = [
     { k: t('rv_budget'), v: `$${dest.budget - s.budgetLeft}M / $${dest.budget}M`, f: (dest.budget - s.budgetLeft) / dest.budget },

@@ -81,6 +81,9 @@ const STRINGS = {
     rate_safety: 'Seguridad', rate_science: 'Ciencia', rate_speed: 'Rapidez', rate_morale: 'Ánimo del equipo', withYou: 'Viajan contigo', chooseCmd: 'Elegir comandante',
     prologue: 'Prólogo', beginMission: 'Comenzar la misión',
     rv_room: 'Sala de control de misión', rv_fd: 'Director de vuelo: «Encuesta GO / NO-GO para lanzamiento»', rv_polling: 'Encuestando consolas {n}/{total}', rv_go: 'GO PARA LANZAMIENTO', rv_hold: 'EN ESPERA · {n} NO-GO', rv_budget: 'Presupuesto', rv_mass: 'Masa / cohete', rv_power: 'Consumo / energía',
+    water: 'Agua', powerHud: 'Energía', systemsHud: 'Sistemas de la nave', brokenShort: 'ROTO', fixShort: 'Reparar', sendEngineer: 'Mandar a la ingeniera a repararlo', goalAntenna: 'Objetivo: reparar la antena principal para recuperar la voz de la Tierra.', taskToday: 'Hoy', tasksToday: 'Tareas de la tripulación', suggest: 'Sugerir tareas', rationLabel: 'Racionar comida (rinde el doble, pero baja el ánimo y la energía)',
+    soundOn: 'Sonido: sí', soundOff: 'Sonido: no', dawn: 'Amanece',
+    tutorial: 'Cómo se juega', skipTutorial: 'Saltar', next: 'Siguiente', gotIt: 'Entendido',
     lang: 'English',
   },
   en: {
@@ -162,6 +165,9 @@ const STRINGS = {
     rate_safety: 'Safety', rate_science: 'Science', rate_speed: 'Speed', rate_morale: 'Crew morale', withYou: 'Flying with you', chooseCmd: 'Choose commander',
     prologue: 'Prologue', beginMission: 'Begin the mission',
     rv_room: 'Mission Control room', rv_fd: 'Flight Director: “GO / NO-GO poll for launch”', rv_polling: 'Polling consoles {n}/{total}', rv_go: 'GO FOR LAUNCH', rv_hold: 'HOLD · {n} NO-GO', rv_budget: 'Budget', rv_mass: 'Mass / rocket', rv_power: 'Use / power',
+    water: 'Water', powerHud: 'Power', systemsHud: 'Ship systems', brokenShort: 'DOWN', fixShort: 'Fix', sendEngineer: 'Send the engineer to fix it', goalAntenna: 'Goal: repair the main antenna to get Earth’s voice back.', taskToday: 'Today', tasksToday: 'Crew jobs', suggest: 'Suggest jobs', rationLabel: 'Ration food (lasts twice as long, but lowers morale and energy)',
+    soundOn: 'Sound: on', soundOff: 'Sound: off', dawn: 'Dawn',
+    tutorial: 'How to play', skipTutorial: 'Skip', next: 'Next', gotIt: 'Got it',
     lang: 'Español',
   },
 }

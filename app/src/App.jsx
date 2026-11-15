@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { useGame } from './store'
+import { isMuted, setMuted } from './sound'
 import { useT } from './i18n'
 import Home from './screens/Home'
 import Destination from './screens/Destination'
@@ -25,6 +27,12 @@ export default function App() {
   )
 }
 
+function SoundToggle() {
+  const { t } = useT()
+  const [off, setOff] = useState(isMuted)
+  return <button className="lang" onClick={() => { setMuted(!off); setOff(!off) }}>{off ? t('soundOff') : t('soundOn')}</button>
+}
+
 function Header() {
   const { t } = useT()
   const screen = useGame((s) => s.screen)
@@ -43,7 +51,10 @@ function Header() {
           ))}
         </ol>
       )}
-      <button className="lang" onClick={toggleLang}>{t('lang')}</button>
+      <div className="header-tools">
+        <SoundToggle />
+        <button className="lang" onClick={toggleLang}>{t('lang')}</button>
+      </div>
     </header>
   )
 }

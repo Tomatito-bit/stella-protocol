@@ -4,6 +4,7 @@ import { OrbitControls, Stars, useGLTF, useTexture } from '@react-three/drei'
 import * as THREE from 'three'
 import { crewById } from '../data/crew'
 import { crewPlaces, SPOT_ROOM } from '../logic/crewPlaces'
+import { SYSTEMS, BROKEN } from '../logic/ship'
 import { useT } from '../i18n'
 import { dressAstronaut } from './dressAstronaut'
 
@@ -176,7 +177,7 @@ function fitToDesign(source, sel, shield) {
   return scene
 }
 
-function Deck({ places, sel, shield }) {
+function Deck({ places, sel, shield, systems }) {
   const { L } = useT()
   const { scene: source } = useGLTF('/models/deck.glb')
   const scene = useMemo(() => fitToDesign(source, sel || {}, shield || 0), [source, sel, shield])
@@ -187,12 +188,13 @@ function Deck({ places, sel, shield }) {
       <primitive object={scene} />
       {Object.entries(ROOM_NAMES).map(([room, name]) => nodes[`Room_${room}`] && <RoomLabel key={room} text={room === 'Medbay' && !hasMed ? L(NO_MEDBAY) : L(name)} at={labelSpot(nodes, room)} />)}
       {places.map((p) => <Astronaut key={p.id} place={p} nodes={nodes} />)}
+      {brokenRooms(systems).map((room) => nodes[`Room_${room}`] && <RoomAlert key={room} at={nodes[`Room_${room}`]} />)}
     </>
   )
 }
 
-export const CrewInterior = memo(function CrewInterior({ crew, plan, event, destId, sel, shield }) {
-  const places = crewPlaces(crew, { plan, event })
+export const CrewInterior = memo(function CrewInterior({ crew, plan, event, destId, sel, shield, tasks, systems }) {
+  const places = crewPlaces(crew, { plan, event, tasks })
   const alarm = event === 'solarStorm' || event === 'radiationBelt' || event === 'co2' || event === 'panic'
   return (
     <Canvas camera={{ position: [15, 21, 21], fov: 40 }} dpr={[1, 2]} gl={{ toneMapping: THREE.ACESFilmicToneMapping }}>
@@ -204,7 +206,7 @@ export const CrewInterior = memo(function CrewInterior({ crew, plan, event, dest
       {alarm && <AlarmLight />}
       <Suspense fallback={null}>
         <Drift>
-          <Deck places={places} sel={sel} shield={shield} />
+          <Deck places={places} sel={sel} shield={shield} systems={systems} />
         </Drift>
         {destId && <WorldBelow destId={destId} />}
       </Suspense>
@@ -212,6 +214,43 @@ export const CrewInterior = memo(function CrewInterior({ crew, plan, event, dest
     </Canvas>
   )
 })
+
+// Rooms whose system is broken
+function brokenRooms(systems) {
+  return [...new Set(Object.entries(systems || {}).filter(([, v]) => v < BROKEN).map(([id]) => SYSTEMS[id].room))]
+}
+
+// A broken system: the room floor flashes red and sparks jump out of the machine
+function RoomAlert({ at }) {
+  const ring = useRef()
+  const light = useRef()
+  const sparks = useRef()
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime()
+    const pulse = 0.5 + 0.5 * Math.sin(t * 7)
+    if (ring.current) { ring.current.material.opacity = 0.15 + pulse * 0.35; ring.current.scale.setScalar(1 + pulse * 0.15) }
+    if (light.current) light.current.intensity = 2 + pulse * 6
+    if (sparks.current) sparks.current.children.forEach((s, i) => {
+      const k = (t * 1.8 + i * 0.37) % 1
+      s.position.set(Math.sin(i * 2.3) * 0.5 * k, 0.6 + k * 1.2 - k * k * 1.4, Math.cos(i * 1.7) * 0.5 * k)
+      s.scale.setScalar(1 - k)
+    })
+  })
+  return (
+    <group position={[at.x, 0.05, at.z]}>
+      <mesh ref={ring} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[1.5, 40]} />
+        <meshBasicMaterial color="#ff2a2a" transparent opacity={0.3} depthWrite={false} />
+      </mesh>
+      <pointLight ref={light} position={[0, 1.2, 0]} color="#ff3b30" distance={5} />
+      <group ref={sparks}>
+        {Array.from({ length: 7 }, (_, i) => (
+          <mesh key={i}><sphereGeometry args={[0.05, 6, 6]} /><meshBasicMaterial color={i % 2 ? '#ffd166' : '#ff8a3d'} toneMapped={false} /></mesh>
+        ))}
+      </group>
+    </group>
+  )
+}
 
 // Red rotating alarm glow during emergencies
 function AlarmLight() {

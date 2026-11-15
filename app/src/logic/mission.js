@@ -2,6 +2,7 @@ import { CREW, crewById } from '../data/crew'
 import { DEFECTS } from '../data/events'
 import { TESTS, partById } from '../data/parts'
 import { summarize, count } from './budget'
+import { BROKEN, SYSTEMS, TASKS, taskKind, taskTarget, initialSystems, worstSystem } from './ship'
 
 // Seeded random numbers so a mission can be replayed
 export function rng(seed) {
@@ -24,7 +25,7 @@ const STYLE = {
 export const styleOf = (commanderId) => STYLE[crewById[commanderId].style]
 
 // Science each destination needs for full success
-const GOAL = { moon: 120, mars: 160, europa: 150 }
+const GOAL = { moon: 140, mars: 160, europa: 150 }
 
 export function startMission(dest, sel, launcherId, tests, commanderId, seed) {
   const r = rng(seed)
@@ -42,7 +43,7 @@ export function startMission(dest, sel, launcherId, tests, commanderId, seed) {
     }
   }
   const crew = dest.crewed
-    ? [crewById[commanderId], ...CREW.filter((c) => c.id !== commanderId)].map((c) => ({ id: c.id, duty: c.duty, commander: c.id === commanderId, health: 100, morale: 85, energy: 90, hiddenFound: false }))
+    ? [crewById[commanderId], ...CREW.filter((c) => c.id !== commanderId)].map((c) => ({ id: c.id, duty: c.duty, commander: c.id === commanderId, health: 100, morale: 85, energy: 90, hiddenFound: false, lastExercise: 0 }))
     : null
   return {
     seed,
@@ -62,6 +63,10 @@ export function startMission(dest, sel, launcherId, tests, commanderId, seed) {
     defects,
     shield: s.shield,
     orderDay: -1,
+    systems: dest.crewed ? initialSystems(dest, parts) : null,
+    o2: 100,
+    water: 100,
+    voiceBack: false,
     effects: { apathy: false, panic: 0, frustrated: 0, medicBusy: 0, divided: false, halfDays: 0, errorRisk: 0 },
     lastStorm: false,
     over: false,
@@ -120,14 +125,22 @@ export function rollEvent(m, dest, commanderId) {
 const working = (m, id) => (m.parts[id] || 0) > 0
 
 // Advances one day. plan: 'science' | 'transmit' | 'rest'. choice: { event, option } or null.
-export function nextDay(m0, dest, commanderId, plan, choice) {
+// Crewed missions pass opts.tasks (a job per crew member) and opts.ration; the plan is then derived from the jobs.
+export function nextDay(m0, dest, commanderId, planIn, choice, opts = {}) {
+  let plan = planIn
   const r = rng(m0.seed + m0.day * 7919 + 1)
   const st = styleOf(commanderId)
-  const m = { ...m0, parts: { ...m0.parts }, crew: m0.crew && m0.crew.map((c) => ({ ...c })), decisions: [...m0.decisions] }
+  const m = { ...m0, parts: { ...m0.parts }, crew: m0.crew && m0.crew.map((c) => ({ ...c })), decisions: [...m0.decisions], systems: m0.systems && { ...m0.systems } }
+  const tasks = m.crew && m.systems && opts.tasks
+  const jobOf = (c) => taskKind(tasks && tasks[c.id])
+  const nJob = (k) => (tasks ? m.crew.filter((c) => jobOf(c) === k).length : 0)
+  if (tasks) plan = nJob('rest') >= 3 ? 'rest' : nJob('comms') >= 2 ? 'transmit' : 'science'
   const day = m.day + 1
   const notes = []
   const note = (type, es, en) => notes.push({ type, text: { es, en } })
   let sciFactor = plan === 'science' ? 1 : plan === 'transmit' ? 0.3 : 0
+  // With jobs, science comes from whoever is researching (the analyst counts double)
+  if (tasks) sciFactor = m.crew.reduce((a, c) => a + (jobOf(c) === 'science' ? (c.duty === 'scientist' ? 1.5 : 0.75) * (0.4 + 0.6 * c.energy / 100) : 0), 0) * 0.85
   let doseToday = 0.4 * dest.radiation // galactic cosmic rays, always there
   let powerPenalty = 1
   const crewHit = (field, d) => m.crew && m.crew.forEach((c) => { c[field] = clamp(c[field] + d) })
@@ -172,6 +185,7 @@ export function nextDay(m0, dest, commanderId, plan, choice) {
       } else {
         const p = breakPart((x) => x.cat !== 'life')
         if (p) note('bad', `El impacto inutilizó: ${p.name.es.toLowerCase()}.`, `The impact knocked out: ${p.name.en.toLowerCase()}.`)
+        if (m.systems) { const ids = Object.keys(m.systems); const id = ids[Math.floor(r() * ids.length)]; m.systems[id] = Math.max(0, m.systems[id] - 40); note('bad', `El impacto dañó: ${SYSTEMS[id].name.es.toLowerCase()}.`, `The impact damaged the ${SYSTEMS[id].name.en.toLowerCase()}.`) }
       }
     }
     if (event === 'co2') {
@@ -337,6 +351,83 @@ export function nextDay(m0, dest, commanderId, plan, choice) {
     note('bad', `Error humano por cansancio${p ? `: se dañó ${p.name.es.toLowerCase()}` : ''}.`, `Human error from fatigue${p ? `: the ${p.name.en.toLowerCase()} was damaged` : ''}.`)
   }
   if (plan === 'rest') fx.errorRisk = 0
+
+  // 1c. Crew jobs, ship systems and consumables (crewed missions)
+  let commsBoost = 0
+  let solarFactor = 1
+  if (tasks) {
+    const sys = m.systems
+    const nameOf = (c) => crewById[c.id].name
+    m.crew.forEach((c) => {
+      const k = jobOf(c)
+      const eff = 0.5 + 0.5 * c.energy / 100
+      if (k === 'repair') {
+        const id = sys[taskTarget(tasks[c.id])] != null ? taskTarget(tasks[c.id]) : worstSystem(sys)
+        const sysName = SYSTEMS[id].name
+        if (sys[id] < BROKEN && !takeSpare()) note('warn', `${nameOf(c)} no pudo reparar ${sysName.es.toLowerCase()}: no quedan refacciones.`, `${nameOf(c)} couldn't fix the ${sysName.en.toLowerCase()}: no spare parts left.`)
+        else {
+          const engineer = c.duty === 'engineer'
+          const odds = (engineer ? 0.95 : 0.7) * (engineer && fx.frustrated ? 0.65 : 1) * (0.6 + 0.4 * eff)
+          if (r() < odds) {
+            sys[id] = Math.min(100, sys[id] + (engineer ? 55 : 30) * eff)
+            note('good', `${nameOf(c)} reparó ${sysName.es.toLowerCase()} (${Math.round(sys[id])}%).`, `${nameOf(c)} repaired the ${sysName.en.toLowerCase()} (${Math.round(sys[id])}%).`)
+          } else note('bad', `${nameOf(c)} intentó reparar ${sysName.es.toLowerCase()}, pero falló.`, `${nameOf(c)} tried to fix the ${sysName.en.toLowerCase()}, but failed.`)
+        }
+      }
+      if (k === 'medbay') {
+        if (!working(m, 'medkit')) note('warn', 'Sin enfermería a bordo solo hubo primeros auxilios.', 'With no medical bay there was only first aid.')
+        const patient = [...m.crew].sort((a, b) => a.health - b.health)[0]
+        const heal = (c.duty === 'doctor' ? 22 : 8) * (working(m, 'medkit') ? 1 : 0.4) * (fx.medicBusy ? 0.5 : 1)
+        patient.health = clamp(patient.health + heal)
+        if (heal >= 10 && patient.health < 100) note('good', `${nameOf(c)} atendió a ${nameOf(patient)} en la enfermería.`, `${nameOf(c)} treated ${nameOf(patient)} in the medbay.`)
+      }
+      if (k === 'exercise') { c.health = clamp(c.health + 5); c.morale = clamp(c.morale + 6); c.lastExercise = day }
+      if (k === 'recycle') { m.water = Math.min(100, m.water + 18); m.o2 = Math.min(100, m.o2 + 8) }
+      if (k === 'comms') commsBoost += c.duty === 'pilot' ? 1.4 : 1
+      if (k === 'eva') {
+        // Outside the hull: external repairs need no spares, samples go straight into the science count
+        const outside = ['antenna', 'solar'].filter((id) => sys[id] != null && sys[id] < 85).sort((a, b) => sys[a] - sys[b])[0]
+        if (outside) { sys[outside] = Math.min(100, sys[outside] + 40 * eff); note('good', `${nameOf(c)} salió en caminata espacial y reparó ${SYSTEMS[outside].name.es.toLowerCase()} por fuera.`, `${nameOf(c)} went on a spacewalk and fixed the ${SYSTEMS[outside].name.en.toLowerCase()} from outside.`) }
+        else { m.science += 12 * eff; note('good', `${nameOf(c)} salió en caminata espacial y recogió muestras: +${Math.round(12 * eff)} de ciencia.`, `${nameOf(c)} went on a spacewalk and collected samples: +${Math.round(12 * eff)} science.`) }
+        doseToday += 1.5
+        const storm = choice && (choice.event === 'solarStorm' || choice.event === 'radiationBelt')
+        if (r() < (storm ? 0.45 : 0.12) + (c.energy < 40 ? 0.1 : 0)) { c.health = clamp(c.health - 25); note('bad', `Durante la caminata, ${nameOf(c)} se lastimó: un micrometeorito rozó el traje.`, `During the spacewalk, ${nameOf(c)} got hurt: a micrometeoroid grazed the suit.`) }
+      }
+      c.energy = clamp(c.energy + TASKS[k].energy * (k === 'rest' ? 1 : st.fatigue))
+      // In weightlessness bones and muscles weaken without daily exercise (ISS crews train ~2 h a day)
+      if (day - (c.lastExercise || 0) > 3) c.health = clamp(c.health - 2)
+    })
+
+    // Wear and tear, plus the odd sudden failure
+    const ids = Object.keys(sys)
+    // The engine sits idle in orbit, so it barely wears; everything else runs all day
+    ids.forEach((id) => { sys[id] = Math.max(0, sys[id] - (id === 'engine' ? 0.4 : 1 + r() * 3)) })
+    if (r() < 0.14 + day * 0.008) {
+      const pool = ids.filter((id) => id !== 'engine' || r() < 0.3)
+      const id = pool[Math.floor(r() * pool.length)]
+      const was = sys[id]
+      sys[id] = Math.max(0, sys[id] - (35 + r() * 25))
+      if (was >= BROKEN) note('bad', `¡Falla a bordo! ${SYSTEMS[id].name.es} bajó a ${Math.round(sys[id])}%.`, `Failure on board! The ${SYSTEMS[id].name.en.toLowerCase()} dropped to ${Math.round(sys[id])}%.`)
+    }
+
+    // Air and water: the crew breathes and drinks; working machines recycle
+    const ok = (id) => (sys[id] >= BROKEN ? sys[id] / 100 : 0)
+    m.o2 = Math.max(0, Math.min(100, m.o2 - 7 + 7.6 * ok('scrubber')))
+    m.water = Math.max(0, Math.min(100, m.water - 6 + 5.4 * ok('recycler')))
+    if (sys.scrubber < BROKEN) note('bad', 'El filtro de CO₂ está roto: el oxígeno baja.', 'The CO₂ scrubber is broken: oxygen is dropping.')
+    if (sys.recycler < BROKEN) note('warn', 'El reciclador de agua no funciona.', 'The water recycler is down.')
+    if (m.o2 < 25) { crewHit('health', -8); crewHit('energy', -8); note('bad', 'Aire viciado: mareos y dolor de cabeza.', 'Stale air: dizziness and headaches.') }
+    if (m.water < 20) { crewHit('health', -5); crewHit('morale', -5); note('bad', 'Agua racionada al mínimo.', 'Water rationed to the bare minimum.') }
+    if (opts.ration) { m.supplies += 0.5; crewHit('morale', -6); crewHit('energy', -5) }
+    solarFactor = sys.solar == null ? 1 : sys.solar >= BROKEN ? 0.6 + 0.4 * sys.solar / 100 : 0.4
+
+    // The story thread from the prologue: getting Earth's voice back
+    if (!m.voiceBack && sys.antenna >= 70) {
+      m.voiceBack = true
+      crewHit('morale', 15)
+      note('good', '¡Antena reparada! Después de días de silencio, se escucha la voz de control de misión. Hay lágrimas en la cabina.', 'Antenna fixed! After days of silence, Mission Control’s voice comes through. There are tears in the cabin.')
+    }
+  }
   m.lastStorm = !!choice && (choice.event === 'solarStorm' || choice.event === 'radiationBelt')
 
   // 2. Hidden defects from skipped tests
@@ -349,22 +440,26 @@ export function nextDay(m0, dest, commanderId, plan, choice) {
 
   // 3. Science and data: instruments that still work, power, electronics and crew shape
   const s = summarize(dest, m.parts, null, [])
-  const power = (s.use > 0 ? Math.min(1, s.generation / s.use) : 1) * powerPenalty
+  const power = (s.use > 0 ? Math.min(1, (s.generation * solarFactor) / s.use) : 1) * powerPenalty
   if (power < 1) note('warn', `Energía al ${Math.round(power * 100)} %.`, `Power at ${Math.round(power * 100)}%.`)
   const crewShape = m.crew ? m.crew.reduce((a, c) => a + (0.5 + 0.25 * c.energy / 100 + 0.25 * c.morale / 100) * (c.health / 100), 0) / m.crew.length : 1
   const raw = s.science * 2.2 * sciFactor * power * (m.electronics / 100) * crewShape * st.science * m.gyroPenalty
-  const link = s.link > 0 ? s.link * (plan === 'transmit' ? 12 : 4) : 0
+  const antennaUp = !m.systems || m.systems.antenna >= BROKEN
+  const link = s.link <= 0 ? 0 : !antennaUp ? (working(m, 'lga') ? 3 : 0) : tasks ? s.link * (4 + 5 * commsBoost) : s.link * (plan === 'transmit' ? 12 : 4)
   m.dataPending += raw
   const sent = Math.min(m.dataPending, link)
   m.dataPending -= sent
   m.science += sent
+  // Last day: whatever is stored on board goes home in one final downlink if the antenna works
+  if (day >= m.totalDays && antennaUp && m.dataPending > 0) { m.science += m.dataPending * 0.8; m.dataPending = 0 }
   if (s.link === 0) note('bad', 'Sin antena funcionando: los datos no llegan a la Tierra.', 'No working antenna: data can’t reach Earth.')
+  else if (!antennaUp) note('warn', 'La antena principal sigue dañada: los datos se acumulan a bordo.', 'The main antenna is still damaged: data piles up on board.')
 
   // 4. Crew: fatigue, morale, food and dose
   if (m.crew) {
     m.supplies -= 1
     m.crew.forEach((c) => {
-      c.energy = clamp(c.energy + (plan === 'rest' ? 25 : plan === 'transmit' ? -4 : -9 * st.fatigue))
+      if (!tasks) c.energy = clamp(c.energy + (plan === 'rest' ? 25 : plan === 'transmit' ? -4 : -9 * st.fatigue))
       c.morale = clamp(c.morale - (2 + day * 0.4) * st.morale + (c.duty === 'doctor' ? 1 : 0))
       if (c.energy < 15) c.health = clamp(c.health - 4)
       if (m.supplies < 0) { c.health = clamp(c.health - 10); c.morale = clamp(c.morale - 10) }
@@ -376,6 +471,8 @@ export function nextDay(m0, dest, commanderId, plan, choice) {
   // 5. Losing the mission
   if (s.link === 0 && !dest.crewed) m.lost = { es: 'Se perdió todo contacto con la sonda.', en: 'All contact with the probe was lost.' }
   if (m.crew && m.crew.some((c) => c.health <= 0)) m.lost = { es: 'Un tripulante quedó en estado crítico: la misión se aborta.', en: 'A crew member is in critical condition: the mission is aborted.' }
+  if (m.o2 <= 0) m.lost = { es: 'Se acabó el oxígeno respirable: la misión se aborta.', en: 'Breathable oxygen ran out: the mission is aborted.' }
+  if (m.systems && day >= m.totalDays && m.systems.engine < BROKEN) m.lost = { es: 'El motor principal no encendió para la maniobra de regreso.', en: 'The main engine failed to fire for the return burn.' }
   if (m.electronics <= 0) m.lost = { es: 'La radiación destruyó la electrónica de la nave.', en: 'Radiation destroyed the spacecraft’s electronics.' }
 
   m.day = day

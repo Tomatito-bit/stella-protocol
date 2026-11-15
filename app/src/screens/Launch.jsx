@@ -7,6 +7,7 @@ import { summarize } from '../logic/budget'
 import { T, telemetry, phaseOf } from '../logic/launch'
 import { LaunchScene } from '../components/LaunchScene'
 import { PROLOGUE } from '../data/prologue'
+import { sfx } from '../sound'
 
 // Phase D: countdown, liftoff, staging, fairing, cruise and orbit insertion
 export default function Launch() {
@@ -22,8 +23,12 @@ export default function Launch() {
   useEffect(() => {
     start.current = performance.now()
     let id
+    let last = -1
     const tick = () => {
       const s = (performance.now() - start.current) / 1000
+      // Countdown beeps every second, then the rumble of liftoff
+      const whole = Math.floor(s)
+      if (whole !== last) { last = whole; if (s < T.liftoff - 0.5) sfx.beep(); else if (whole === Math.floor(T.liftoff)) sfx.liftoff() }
       setSec(s)
       if (s >= T.end) return setStory(true)
       id = requestAnimationFrame(tick)
