@@ -4,7 +4,8 @@ import { GameCanvas } from './GameCanvas'
 import { OrbitControls, Stars, useGLTF, useTexture } from '@react-three/drei'
 import * as THREE from 'three'
 import { crewById } from '../data/crew'
-import { crewPlaces, SPOT_ROOM } from '../logic/crewPlaces'
+import { crewPlaces } from '../logic/crewPlaces'
+import { route } from '../logic/deckRoute'
 import { SYSTEMS, BROKEN } from '../logic/ship'
 import { useT } from '../i18n'
 import { dressAstronaut } from './dressAstronaut'
@@ -55,15 +56,6 @@ function RoomLabel({ text, at }) {
   )
 }
 
-// Route between two spots: leave through the room door, walk the corridor, enter the other door
-function route(nodes, fromSpot, toSpot, offset) {
-  const a = SPOT_ROOM[fromSpot]
-  const b = SPOT_ROOM[toSpot]
-  const end = nodes[toSpot].clone().add(new THREE.Vector3(offset[0], 0, offset[1]))
-  if (!a || a === b) return [end]
-  return [nodes[`Door_${a}`], nodes[`Hall_${a}`], nodes[`Hall_${b}`], nodes[`Door_${b}`], end].filter(Boolean).map((v) => v.clone())
-}
-
 function Astronaut({ place, nodes }) {
   const { scene } = useGLTF('/models/astronaut.glb')
   const info = crewById[place.id]
@@ -80,7 +72,7 @@ function Astronaut({ place, nodes }) {
     if (!joints.current) { const j = {}; model.traverse((o) => { j[o.name] = o }); joints.current = j }
     // New destination: plan a walk through the corridor
     if (current.current !== place.spot) {
-      path.current = route(nodes, current.current, place.spot, place.offset)
+      path.current = route(nodes, g.position, place.spot, place.offset)
       current.current = place.spot
     }
     const t = clock.getElapsedTime() + phase

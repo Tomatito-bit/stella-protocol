@@ -23,7 +23,7 @@ export function crewPlaces(crew, { plan, event, tasks }) {
   let arguing = 0
   const crowd = {}
   // Two people at the same spot stand side by side instead of on top of each other
-  const at = (c, spot, mode) => { const k = crowd[spot] = (crowd[spot] || 0) + 1; return { id: c.id, spot, offset: [(k - 1) * 0.8 - (k > 1 ? 0.4 : 0), (k - 1) * 0.5], mode } }
+  const at = (c, spot, mode) => { const k = crowd[spot] = (crowd[spot] || 0) + 1; return { id: c.id, spot, offset: [[0, 0], [0.55, 0], [-0.55, 0], [0, 0.5]][(k - 1) % 4], mode } }
   return crew.map((c, i) => {
     if (event === 'homeMessage' || event === 'harvest') return at(c, 'Spot_commons', 'idle')
     if (event === 'drill' || event === 'gravity') return at(c, 'Room_Airlock', 'work')

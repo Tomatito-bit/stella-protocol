@@ -878,3 +878,72 @@ html, body { overflow-x: hidden; }
 .live-alert.secret { background: rgba(10, 30, 16, 0.95); }
 .tutorial-bg { background: rgba(2, 4, 12, 0.78); }
 .screen-loading { min-height: calc(100dvh - 53px); background: radial-gradient(circle at 50% 50%, rgba(90, 209, 255, 0.06), transparent 60%); }
+
+/* ---------- Logbook: each spread is one text in two columns (left page continues on the right) ---------- */
+.logbook > .page.left, .logbook > .page.right { overflow: hidden; padding: 0 !important; }
+.spread-flow {
+  position: absolute; inset: 0; z-index: 2; box-sizing: border-box;
+  padding: 26px 34px 60px 60px;
+  column-count: 2; column-gap: 92px; column-fill: auto;
+  color: var(--ink); overflow: hidden;
+}
+.spread-flow.overflow { column-fill: balance; height: auto; max-height: 100%; overflow-y: auto; scrollbar-width: thin; }
+.spread-flow.half-left { clip-path: inset(0 50% 0 0); }
+.spread-flow.half-right { clip-path: inset(0 0 0 50%); }
+/* Inside the turning sheet: a full-width spread, shifted so the sheet shows its own half */
+.flip-face { padding: 0 !important; overflow: hidden; }
+.spread-flow.in-face { width: 200%; right: auto; }
+.spread-flow.in-face.face-right { left: -100%; }
+.spread-flow.in-face.face-left { left: 0; }
+/* Keep things whole when the text moves to the next page */
+.spread-flow .crew-photos, .spread-flow .crew-photo, .spread-flow .shelf, .spread-flow .gauges-row, .spread-flow .today-event,
+.spread-flow .hand-option, .spread-flow .task-line, .spread-flow li, .spread-flow .sticky, .spread-flow .sci-progress,
+.spread-flow .calendar, .spread-flow .day-stamps, .spread-flow .polaroid, .spread-flow .fact-note, .spread-flow .page-head,
+.spread-flow h3, .spread-flow h4, .spread-flow .warnings, .spread-flow .logbook-actions { break-inside: avoid; }
+.spread-flow h3, .spread-flow h4, .spread-flow .tiny, .spread-flow .section { break-after: avoid; }
+.spread-flow .tiny { display: block; }
+.spread-flow .sticky { display: block; margin-left: auto; }
+.spread-flow .page-nav { display: flex; }
+.spread-flow .crew-photos { margin-top: 10px; }
+/* Page-turn buttons sit at the bottom corners of the book */
+.spread-nav { position: absolute; left: 50px; right: 40px; bottom: 12px; z-index: 4; display: flex; justify-content: space-between; pointer-events: none; }
+.spread-nav button { pointer-events: auto; background: none; border: 0; font-family: var(--hand); font-size: 22px; color: var(--ink); cursor: pointer; padding: 2px 6px; border-radius: 6px; }
+.spread-nav button:only-child { margin-left: 0; }
+.spread-nav button:hover { background: rgba(35, 38, 74, 0.08); }
+.logbook.opening .spread-flow { clip-path: inset(0 0 0 50%); }
+@media (max-width: 900px) {
+  .logbook > .page.left, .logbook > .page.right, .rings { display: none; }
+  .spread-flow { position: relative; inset: auto; column-count: 1; height: auto; padding: 20px 16px 64px 30px; border-radius: 10px; background: repeating-linear-gradient(180deg, transparent 0 31px, rgba(80, 120, 190, 0.22) 31px 32px), radial-gradient(ellipse at 30% 0%, #fbf6e8, #eee2c6 85%); }
+  .spread-flow.half-left, .spread-flow.half-right { clip-path: none; }
+  .spread-flow.half-right { display: none; }
+  .spread-nav { position: absolute; left: 20px; right: 16px; bottom: 10px; }
+}
+
+.spread-flow .flow-part.col-break { break-before: column; }
+/* The destination photo stays pinned in the corner of the left page */
+.spread-flow .polaroid { position: absolute; float: none; top: 18px; left: calc(50% - 46px - 140px); margin: 0; z-index: 3; }
+@media (max-width: 900px) { .spread-flow .polaroid { position: static; float: right; } .spread-flow .flow-part.col-break { break-before: auto; } }
+
+/* ---------- Job stickers (instead of dropdowns) ---------- */
+.task-board { display: grid; gap: 10px; margin: 8px 0 8px; }
+.task-row { break-inside: avoid; }
+.task-who { display: flex; align-items: baseline; gap: 8px; }
+.task-who b { font-size: 22px; }
+.task-who small { font-size: 15px; color: #6b6150; line-height: 1.1; }
+.stickers { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 3px; margin-top: 2px; }
+.sticker { position: relative; display: grid; justify-items: center; gap: 0; padding: 3px 0 2px; background: rgba(255, 255, 255, 0.45); border: 1.5px dashed rgba(35, 38, 74, 0.25); border-radius: 8px; cursor: pointer; transform: rotate(var(--r, 0deg)); transition: transform 0.15s, background 0.15s; }
+.sticker:nth-child(odd) { --r: -2deg; } .sticker:nth-child(3n) { --r: 1.5deg; }
+.sticker:hover { background: rgba(255, 255, 255, 0.85); transform: rotate(0deg) scale(1.06); }
+.sticker .task-icon { width: 28px; height: 28px; }
+.sticker span { font-size: 12.5px; line-height: 1; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.sticker.on { background: #fffdf3; border-style: solid; border-color: transparent; }
+.sticker.on::after { content: ''; position: absolute; inset: -4px; border: 2.5px solid #d64f5c; border-radius: 50% 45% 52% 48%; transform: rotate(-4deg); pointer-events: none; }
+.repair-targets { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+.repair-targets .chip-hand.broken { color: #b0283a; border-color: rgba(176, 40, 58, 0.5); }
+.photo-task { display: flex; align-items: center; gap: 4px; font-size: 15px; margin-top: 3px; }
+.photo-task .task-icon { width: 20px; height: 20px; }
+.fix-sent { font-family: var(--hand); font-size: 16px; color: #2f7a4b; padding-left: 6px; white-space: nowrap; }
+/* The closed logbook rests in the bottom-right corner */
+.closed-logbook { left: auto !important; right: 22px; transform: rotate(5deg); }
+.closed-logbook .cover-hint { left: auto; right: 0; text-align: right; }
+@media (max-width: 900px) { .closed-logbook { right: 12px; } .stickers { grid-template-columns: repeat(4, minmax(0, 1fr)); } }

@@ -127,3 +127,20 @@ export function EventDoodle({ event }) {
     </svg>
   )
 }
+
+// Little hand-drawn icons for each daily job
+export function TaskIcon({ kind }) {
+  const red = '#d64f5c'
+  return (
+    <svg viewBox="0 0 40 40" className="doodle task-icon" aria-hidden>
+      {kind === 'science' && <><path d="M15 6 H25 M17 6 V16 L8 32 Q7 35 10 35 H30 Q33 35 32 32 L23 16 V6" {...ink} /><path d="M11 27 H29 L32 32 Q33 35 30 35 H10 Q7 35 8 32 Z" {...ink} fill="#8fd3c7" /><circle cx="18" cy="30" r="1.5" fill={INK} /><circle cx="23" cy="28" r="1" fill={INK} /></>}
+      {kind === 'repair' && <><path d="M10 31 L24 17" {...ink} strokeWidth="4" /><path d="M24 17 Q22 9 29 7 L31 9 L28 13 L30 15 L34 12 L35 14 Q34 21 26 20 Z" {...ink} fill="#c9a26b" /><circle cx="10" cy="31" r="2" {...ink} /></>}
+      {kind === 'comms' && <><path d="M20 20 L12 35 M20 20 L28 35 M15 29 H25" {...ink} /><circle cx="20" cy="18" r="3" {...ink} fill={red} /><path d="M13 12 Q20 5 27 12 M9 9 Q20 -2 31 9" {...ink} strokeDasharray="3 3" /></>}
+      {kind === 'medbay' && <><rect x="7" y="7" width="26" height="26" rx="6" {...ink} fill="#fff" /><path d="M17 12 H23 V17 H28 V23 H23 V28 H17 V23 H12 V17 H17 Z" {...ink} fill={red} /></>}
+      {kind === 'exercise' && <><path d="M9 20 H31" {...ink} strokeWidth="3" /><rect x="5" y="13" width="5" height="14" rx="1" {...ink} fill="#9aa7c4" /><rect x="30" y="13" width="5" height="14" rx="1" {...ink} fill="#9aa7c4" /></>}
+      {kind === 'recycle' && <><path d="M20 6 Q30 18 30 25 A10 10 0 0 1 10 25 Q10 18 20 6 Z" {...ink} fill="#5aa9e6" /><path d="M15 26 Q16 30 20 31" {...ink} stroke="#fff" /></>}
+      {kind === 'eva' && <><circle cx="20" cy="16" r="10" {...ink} fill="#eef1f6" /><path d="M13 15 Q20 9 27 15 Q27 21 20 21 Q13 21 13 15 Z" {...ink} fill="#23264a" /><path d="M11 26 Q20 33 29 26 L31 36 H9 Z" {...ink} fill="#eef1f6" /></>}
+      {kind === 'rest' && <><path d="M26 8 A13 13 0 1 0 32 28 A10 10 0 0 1 26 8 Z" {...ink} fill="#ffd166" /><path d="M27 12 H32 L27 17 H32" {...ink} strokeWidth="1.5" /></>}
+    </svg>
+  )
+}

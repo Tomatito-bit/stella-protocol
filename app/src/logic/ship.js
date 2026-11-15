@@ -15,14 +15,14 @@ export const SYSTEMS = {
 
 // energy: change per day · spot: where on the deck they go
 export const TASKS = {
-  science: { energy: -12, name: { es: 'Investigar', en: 'Research' }, tip: { es: 'Genera ciencia. La analista rinde el doble.', en: 'Produces science. The analyst does twice as much.' } },
-  repair: { energy: -15, name: { es: 'Reparar', en: 'Repair' }, tip: { es: 'Arregla un sistema. Si está roto gasta una refacción. La ingeniera casi nunca falla.', en: 'Fixes a system. Broken ones use a spare part. The engineer rarely fails.' } },
-  comms: { energy: -6, name: { es: 'Comunicaciones', en: 'Comms' }, tip: { es: 'Envía más datos a la Tierra. El capitán es el mejor.', en: 'Sends more data to Earth. The captain is best at it.' } },
-  medbay: { energy: -8, name: { es: 'Enfermería', en: 'Medbay' }, tip: { es: 'Cura al más lastimado. El doctor cura mucho más.', en: 'Treats whoever is worst off. The doctor heals far more.' } },
-  exercise: { energy: -10, name: { es: 'Ejercicio', en: 'Exercise' }, tip: { es: 'Evita la pérdida de hueso y músculo, y sube el ánimo.', en: 'Prevents bone and muscle loss, and lifts morale.' } },
-  recycle: { energy: -10, name: { es: 'Soporte vital', en: 'Life support' }, tip: { es: 'Recupera agua y oxígeno a mano.', en: 'Recovers water and oxygen by hand.' } },
-  eva: { energy: -25, name: { es: 'Caminata espacial', en: 'Spacewalk (EVA)' }, tip: { es: 'Sale de la nave: repara antena o paneles sin refacciones y recoge muestras (+ciencia). Arriesgado: radiación y posibles lesiones.', en: 'Goes outside: fixes the antenna or arrays without spares and collects samples (+science). Risky: radiation and possible injury.' } },
-  rest: { energy: 28, name: { es: 'Descansar', en: 'Rest' }, tip: { es: 'Recupera energía.', en: 'Recovers energy.' } },
+  science: { short: { es: 'Ciencia', en: 'Science' }, energy: -12, name: { es: 'Investigar', en: 'Research' }, tip: { es: 'Genera ciencia. La analista rinde el doble.', en: 'Produces science. The analyst does twice as much.' } },
+  repair: { short: { es: 'Reparar', en: 'Repair' }, energy: -15, name: { es: 'Reparar', en: 'Repair' }, tip: { es: 'Arregla un sistema. Si está roto gasta una refacción. La ingeniera casi nunca falla.', en: 'Fixes a system. Broken ones use a spare part. The engineer rarely fails.' } },
+  comms: { short: { es: 'Radio', en: 'Radio' }, energy: -6, name: { es: 'Comunicaciones', en: 'Comms' }, tip: { es: 'Envía más datos a la Tierra. El capitán es el mejor.', en: 'Sends more data to Earth. The captain is best at it.' } },
+  medbay: { short: { es: 'Curar', en: 'Heal' }, energy: -8, name: { es: 'Enfermería', en: 'Medbay' }, tip: { es: 'Cura al más lastimado. El doctor cura mucho más.', en: 'Treats whoever is worst off. The doctor heals far more.' } },
+  exercise: { short: { es: 'Ejercicio', en: 'Workout' }, energy: -10, name: { es: 'Ejercicio', en: 'Exercise' }, tip: { es: 'Evita la pérdida de hueso y músculo, y sube el ánimo.', en: 'Prevents bone and muscle loss, and lifts morale.' } },
+  recycle: { short: { es: 'Soporte', en: 'Life sup.' }, energy: -10, name: { es: 'Soporte vital', en: 'Life support' }, tip: { es: 'Recupera agua y oxígeno a mano.', en: 'Recovers water and oxygen by hand.' } },
+  eva: { short: { es: 'EVA', en: 'EVA' }, energy: -25, name: { es: 'Caminata espacial', en: 'Spacewalk (EVA)' }, tip: { es: 'Sale de la nave: repara antena o paneles sin refacciones y recoge muestras (+ciencia). Arriesgado: radiación y posibles lesiones.', en: 'Goes outside: fixes the antenna or arrays without spares and collects samples (+science). Risky: radiation and possible injury.' } },
+  rest: { short: { es: 'Dormir', en: 'Sleep' }, energy: 28, name: { es: 'Descansar', en: 'Rest' }, tip: { es: 'Recupera energía.', en: 'Recovers energy.' } },
 }
 
 export const taskKind = (task) => (task || 'rest').split(':')[0]

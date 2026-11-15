@@ -15,6 +15,8 @@ import { storyFor, PAST } from '../src/data/story.js'
 import { quoteOfDay } from '../src/data/quotes.js'
 import { STRINGS } from '../src/i18n.js'
 import { useGame } from '../src/store.js'
+import * as THREE from 'three'
+import { route, regionOf } from '../src/logic/deckRoute.js'
 
 let fails = 0
 let checks = 0
@@ -130,6 +132,45 @@ let beats = 0
 for (let day = 1; day <= 14; day++) beats += storyFor(day, mars, crew, 14).length
 ok(beats >= 8, `momentos de historia en una misión a Marte: ${beats}`)
 ok(both(quoteOfDay(crew, 3).text), 'nota del tripulante en ambos idiomas')
+
+// ---------- 6b. Astronauts never walk through walls ----------
+section('Caminatas en la nave: siempre por las puertas')
+{
+  const glb = readFileSync('public/models/deck.glb')
+  const json = JSON.parse(glb.slice(20, 20 + glb.readUInt32LE(12)).toString())
+  const nodes = {}
+  json.nodes.forEach((n) => { if (/^(Room_|Door_|Hall_|Spot_|Bed_|Shelter)/.test(n.name || '')) { const [x, y, z] = n.translation || [0, 0, 0]; nodes[n.name] = new THREE.Vector3(x, y, z) } })
+  const spots = Object.keys(nodes).filter((k) => /^(Spot_|Bed_|Shelter|Room_Airlock)/.test(k))
+  const offsets = [[0, 0], [0.55, 0], [-0.55, 0], [0, 0.5], [0, 0.95]]
+  let walks = 0
+  let crossings = 0
+  const walk = (from, to, off) => {
+    const pts = [from.clone(), ...route(nodes, from, to, off)]
+    for (let i = 0; i + 1 < pts.length; i++) {
+      let prev = regionOf(nodes, pts[i])
+      for (let k = 1; k <= 40; k++) {
+        const p = pts[i].clone().lerp(pts[i + 1], k / 40)
+        const r = regionOf(nodes, p)
+        if (r !== prev) {
+          crossings++
+          const room = r === 'hall' ? prev : prev === 'hall' ? r : null
+          ok(room !== null, `${to}: pasa de ${prev} a ${r} sin el pasillo`)
+          if (room) ok(Math.abs(p.x - nodes[`Door_${room}`].x) < 0.9 && Math.abs(p.z - nodes[`Door_${room}`].z) < 0.9, `${to}: entra/sale de ${room} por la puerta`)
+          prev = r
+        }
+      }
+    }
+    walks++
+    return pts
+  }
+  // Same offsets the game uses: beds always [0, 0.95]; shared job spots use the side-by-side slots
+  for (const a of spots) for (const b of spots) for (const off of (/^Bed_/.test(b) ? [[0, 0.95]] : offsets.slice(0, 4))) {
+    const path = walk(nodes[a].clone(), b, off)
+    // change of plans mid-walk: from a point halfway along the first leg, head somewhere else
+    if (path.length > 2) for (const c of spots.slice(0, 6)) walk(path[0].clone().lerp(path[1], 0.5), c, [0, 0])
+  }
+  console.log(`  ${walks} caminatas, ${crossings} cruces de puerta revisados`)
+}
 
 // ---------- 7. The real game loop through the store, every destination ----------
 section('Ciclo real del juego (tienda de estado) en los 3 destinos')

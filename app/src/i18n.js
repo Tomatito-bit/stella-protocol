@@ -90,6 +90,7 @@ export const STRINGS = {
     classified: 'ARCHIVO CLASIFICADO', unknownSignal: 'TRANSMISIÓN NO IDENTIFICADA', secretsFound: 'Archivos clasificados abiertos: {n}',
     realLesson: 'Lección real',
     beforeAstraea: 'Antes de la Astraea',
+    fixSent: '{n} va a repararlo',
     lang: 'English',
   },
   en: {
@@ -180,6 +181,7 @@ export const STRINGS = {
     classified: 'CLASSIFIED FILE', unknownSignal: 'UNIDENTIFIED TRANSMISSION', secretsFound: 'Classified files opened: {n}',
     realLesson: 'Real lesson',
     beforeAstraea: 'Before the Astraea',
+    fixSent: '{n} is on it',
     lang: 'Español',
   },
 }

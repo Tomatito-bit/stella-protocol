@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { startHum, stopHum, sfx } from '../sound'
 import { TUTORIAL } from '../data/tutorial'
 import { quoteOfDay } from '../data/quotes'
 import { EventDoodle } from '../components/Doodles'
-import { FoodPack, LevelDoodle, SpareCrate, FuelTank, Empty } from '../components/Doodles'
+import { FoodPack, LevelDoodle, SpareCrate, FuelTank, Empty, TaskIcon } from '../components/Doodles'
 import { useGame } from '../store'
 import { useT } from '../i18n'
 import { destinationById } from '../data/destinations'
@@ -12,7 +12,7 @@ import { EVENTS } from '../data/events'
 import { biometrics } from '../logic/mission'
 import { MissionScene } from '../components/MissionScene'
 import { CrewInterior } from '../components/CrewInterior'
-import { TASKS, SYSTEMS, BROKEN, taskKind, powerLevel } from '../logic/ship'
+import { TASKS, SYSTEMS, BROKEN, taskKind, taskTarget, worstSystem, powerLevel } from '../logic/ship'
 
 const PLANS = ['science', 'transmit', 'rest']
 const ORDERS = ['rest', 'medical', 'exercise', 'talk']
@@ -96,19 +96,6 @@ function Meter({ label, v }) {
       <b>{Math.round(v)}%</b>
       <div className="bar"><div style={{ width: `${Math.max(0, Math.min(100, v))}%` }} /></div>
     </div>
-  )
-}
-
-// The job a crew member does today, picked from a list (repairs name the system and its state)
-function TaskSelect({ c }) {
-  const { L } = useT()
-  const { mission: m, tasks, setTask } = useGame()
-  const value = (tasks && tasks[c.id]) || 'rest'
-  return (
-    <select className={`task-select task-${taskKind(value)}`} value={value} onChange={(e) => setTask(c.id, e.target.value)} onClick={(e) => e.stopPropagation()}>
-      {['science', 'comms', 'medbay', 'exercise', 'recycle', 'eva', 'rest'].map((k) => <option key={k} value={k}>{L(TASKS[k].name)}</option>)}
-      {Object.entries(m.systems).map(([id, v]) => <option key={id} value={`repair:${id}`}>{L(TASKS.repair.name)}: {L(SYSTEMS[id].name)} ({Math.round(v)}%)</option>)}
-    </select>
   )
 }
 
@@ -218,16 +205,10 @@ function Logbook() {
     setFlip({ to: spread + k, dir: k > 0 ? 1 : -1 })
   }
   const done = () => { setSpread(flip.to); setFlip(null) }
-  const [cl, cr] = spreads[spread]
-  const [nl, nr] = active ? spreads[active.to] : [cl, cr]
-  // Underneath the moving sheet the destination page is already in place
-  const left = active && active.dir < 0 ? nl : cl
-  const right = active && active.dir > 0 ? nr : cr
-  const nav = (side, kind, idx) => (
-    side === 'left'
-      ? <div className="page-turn">{idx > 0 ? <button onClick={() => turn(-1)}>← {t('prevPage')}</button> : <button onClick={closeJournal}>{t('lookAround')}</button>}</div>
-      : <div className="page-turn right">{idx < spreads.length - 1 && <button onClick={() => turn(1)}>{t('nextPage')} →</button>}</div>
-  )
+  // Each spread is ONE text flowing in two columns: what doesn't fit on the left page continues on the right
+  const target = active ? active.to : spread
+  // While a page turns, each half of the book shows the right spread: the old one where the sheet
+  // hasn't passed yet, the new one where it has
   const leftIdx = active && active.dir < 0 ? active.to : spread
   const rightIdx = active && active.dir > 0 ? active.to : spread
   return (
@@ -238,29 +219,66 @@ function Logbook() {
           <div className="cover-face front"><span>{t('journal')}</span><b>{t('day')} {m.day + 1}</b></div>
           <div className="cover-face back" />
         </div>
+        <div className="page left" aria-hidden />
+        <div className="page right" aria-hidden />
         <div className="rings" aria-hidden />
-        <div className="page left" key={`l-${left}`}>
-          <LogPage kind={left} />
-          {nav('left', left, leftIdx)}
-        </div>
-        <div className="page right" key={`r-${right}`}>
-          <LogPage kind={right} />
-          {nav('right', right, rightIdx)}
+        {leftIdx === rightIdx
+          ? <SpreadFlow key={`f-${leftIdx}`} kinds={spreads[leftIdx]} />
+          : <>
+            <SpreadFlow key={`l-${leftIdx}`} kinds={spreads[leftIdx]} half="left" />
+            <SpreadFlow key={`r-${rightIdx}`} kinds={spreads[rightIdx]} half="right" />
+          </>}
+        <div className="spread-nav">
+          {target > 0 ? <button onClick={() => turn(-1)}>← {t('prevPage')}</button> : <button onClick={closeJournal}>{t('lookAround')}</button>}
+          {target < spreads.length - 1 && <button onClick={() => turn(1)}>{t('nextPage')} →</button>}
         </div>
         {active && (
           <div className={`flip-sheet ${active.dir > 0 ? 'fwd' : 'back'}`} onAnimationEnd={flip ? done : undefined} style={frozen ? { animationDelay: `-${freeze}s`, animationPlayState: 'paused' } : undefined} aria-hidden>
+            {/* Front: the half of the old spread the sheet carries away; back: the half of the new one it lays down */}
             <div className={`page flip-face front ${active.dir > 0 ? 'right' : 'left'}`}>
-              <LogPage kind={active.dir > 0 ? cr : cl} />
+              <SpreadFlow kinds={spreads[spread]} inFace={active.dir > 0 ? 'right' : 'left'} />
             </div>
             <div className={`page flip-face rear ${active.dir > 0 ? 'left' : 'right'}`}>
-              <LogPage kind={active.dir > 0 ? nl : nr} />
+              <SpreadFlow kinds={spreads[active.to]} inFace={active.dir > 0 ? 'left' : 'right'} />
             </div>
           </div>
         )}
         <div className="page-dots">
-          {spreads.map((_, i) => <button key={i} className={i === (flip ? flip.to : spread) ? 'on' : ''} onClick={() => turn(i - spread)} aria-label={`${i + 1}`} />)}
+          {spreads.map((_, i) => <button key={i} className={i === target ? 'on' : ''} onClick={() => turn(i - spread)} aria-label={`${i + 1}`} />)}
         </div>
       </div>
+    </div>
+  )
+}
+
+// The content of a two-page spread laid out as two columns (left page → right page).
+// half: show only one page of it (during a page turn); inFace: drawn inside the turning sheet.
+// If it ever needs more than two pages, it falls back to scrolling.
+function SpreadFlow({ kinds, half, inFace }) {
+  const ref = useRef(null)
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    // If the first section fits on the left page, the second starts on the right page;
+    // if it doesn't fit, its overflow continues on the right page and the second follows it.
+    const layout = () => {
+      const [first, second] = el.querySelectorAll(':scope > .flow-part')
+      el.classList.remove('overflow')
+      if (second) {
+        second.classList.remove('col-break')
+        const mid = el.getBoundingClientRect().left + el.clientWidth / 2
+        if (second.getBoundingClientRect().left < mid && first) second.classList.add('col-break')
+      }
+      if (!inFace) el.classList.toggle('overflow', el.scrollWidth > el.clientWidth + 4)
+    }
+    layout()
+    const ro = new ResizeObserver(layout)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [inFace, kinds])
+  return (
+    <div ref={ref} className={`spread-flow ${half ? `half-${half}` : ''} ${inFace ? `in-face face-${inFace}` : ''}`}>
+      {kinds.map((k) => <section key={k} className="flow-part"><LogPage kind={k} /></section>)}
     </div>
   )
 }
@@ -351,7 +369,7 @@ function HandBar({ label, v }) {
 // The crew, as taped photos (rendered in Blender) that change with how each person is doing
 function CrewPage() {
   const { t } = useT()
-  const { mission: m } = useGame()
+  const { mission: m, tasks } = useGame()
   const word = (v, hi, mid, lo) => (v > 66 ? hi : v > 33 ? mid : lo)
   return (
     <>
@@ -380,7 +398,9 @@ function CrewPage() {
                 <HandBar label={t('morale')} v={c.morale} />
                 <span className="pulse hand">♥ {biometrics(c, m.day).heart}</span>
               </div>
-              {m.systems && <div className="photo-task"><span className="hand">{t('taskToday')}:</span><TaskSelect c={c} /></div>}
+              {m.systems && tasks && tasks[c.id] && (
+                <div className="photo-task hand"><TaskIcon kind={taskKind(tasks[c.id])} /> {t('taskToday')}: {L(TASKS[taskKind(tasks[c.id])].name).toLowerCase()}{taskTarget(tasks[c.id]) ? ` · ${L(SYSTEMS[taskTarget(tasks[c.id])].name).toLowerCase()}` : ''}</div>
+              )}
             </figure>
           )
         })}
@@ -392,7 +412,7 @@ function CrewPage() {
 // Inventory drawn like a supply shelf: ration packs, bottles, tanks, crates
 function SuppliesPage() {
   const { t, L } = useT()
-  const { mission: m, ration, setTask } = useGame()
+  const { mission: m, ration, setTask, tasks } = useGame()
   const dest = destinationById[useGame((s) => s.destinationId)]
   const engineer = m.crew && (m.crew.find((c) => c.duty === 'engineer') || m.crew[0])
   const food = m.crew ? Math.max(0, Math.floor(m.supplies)) : null
@@ -431,7 +451,9 @@ function SuppliesPage() {
               <li key={id} className={v < BROKEN ? 'low circled' : ''}>
                 <span>{L(SYSTEMS[id].name)}</span>
                 <b>{v < BROKEN ? t('w_broken') : v < 60 ? t('w_worn') : t('w_ok')} ({Math.round(v)}%)</b>
-                {v < 85 && <button className="fix-link" onClick={() => setTask(engineer.id, `repair:${id}`)} title={t('sendEngineer')}>{t('fixShort')} →</button>}
+                {v < 85 && (tasks && tasks[engineer.id] === `repair:${id}`
+                  ? <span className="fix-sent">✓ {t('fixSent', { n: crewById[engineer.id].name.split(' ')[0] })}</span>
+                  : <button className="fix-link" onClick={() => { sfx.repair(); setTask(engineer.id, `repair:${id}`) }} title={t('sendEngineer')}>{t('fixShort')} →</button>)}
               </li>
             ))}
           </ul>
@@ -487,12 +509,14 @@ function TasksPage() {
   return (
     <>
       <span className="tiny">{t('tasksToday')}</span>
-      <div className="task-grid">
+      <div className="task-board">
         {m.crew.map((c) => (
-          <div key={c.id} className="task-line">
-            <b style={{ color: crewById[c.id].color }}>{crewById[c.id].name.split(' ')[0]}</b>
-            <TaskSelect c={c} />
-            <small>{L(TASKS[taskKind(tasks && tasks[c.id])].tip)}</small>
+          <div key={c.id} className="task-row">
+            <div className="task-who">
+              <b className="hand" style={{ color: crewById[c.id].color }}>{crewById[c.id].name.split(' ')[0]}</b>
+              <small className="hand">{L(TASKS[taskKind(tasks && tasks[c.id])].tip)}</small>
+            </div>
+            <TaskPicker c={c} />
           </div>
         ))}
       </div>
@@ -501,6 +525,38 @@ function TasksPage() {
         <input type="checkbox" checked={ration} onChange={toggleRation} /> {t('rationLabel')}
       </label>
     </>
+  )
+}
+
+// Jobs as hand-drawn stickers: tap one and it gets circled in red. Repair asks which system.
+const STICKERS = ['science', 'repair', 'comms', 'medbay', 'exercise', 'recycle', 'eva', 'rest']
+function TaskPicker({ c }) {
+  const { L } = useT()
+  const { mission: m, tasks, setTask } = useGame()
+  const value = (tasks && tasks[c.id]) || 'rest'
+  const kind = taskKind(value)
+  const target = taskTarget(value)
+  const pick = (k) => { sfx.select(); setTask(c.id, k === 'repair' ? `repair:${target || worstSystem(m.systems)}` : k) }
+  return (
+    <div className="task-picker">
+      <div className="stickers">
+        {STICKERS.map((k) => (
+          <button key={k} className={`sticker ${kind === k ? 'on' : ''}`} onClick={() => pick(k)} title={L(TASKS[k].tip)}>
+            <TaskIcon kind={k} />
+            <span className="hand">{L(TASKS[k].short || TASKS[k].name)}</span>
+          </button>
+        ))}
+      </div>
+      {kind === 'repair' && (
+        <div className="repair-targets">
+          {Object.entries(m.systems).map(([id, v]) => (
+            <button key={id} className={`chip-hand small ${target === id ? 'on' : ''} ${v < BROKEN ? 'broken' : ''}`} onClick={() => setTask(c.id, `repair:${id}`)}>
+              {L(SYSTEMS[id].name)} · {Math.round(v)}%
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
