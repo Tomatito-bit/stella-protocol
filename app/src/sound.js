@@ -118,7 +118,28 @@ export function stopHum() {
 }
 
 // Any button press clicks (installed once at startup)
+// Phones only let audio start inside a real tap (touchend/click), so the first tap "unlocks" it:
+// a one-sample silent buffer wakes the audio hardware, the context resumes, and on iPhone the
+// session is set to media playback so the ring/silent switch doesn't mute the game.
+function unlockAudio() {
+  const a = audio()
+  if (!a) return
+  try {
+    const b = a.createBuffer(1, 1, 22050)
+    const s = a.createBufferSource()
+    s.buffer = b
+    s.connect(a.destination)
+    s.start(0)
+  } catch { /* nothing to wake */ }
+  try { if (navigator.audioSession) navigator.audioSession.type = 'playback' } catch { /* older browsers */ }
+  if (a.state !== 'running') a.resume()
+}
+
 export function installClicks() {
+  const wake = () => { if (!ctx || ctx.state !== 'running') unlockAudio() }
+  for (const evt of ['touchend', 'click', 'keydown']) document.addEventListener(evt, wake, { capture: true, passive: true })
+  // If the phone locks or the tab is hidden, the next tap brings the sound back
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && ctx && ctx.state !== 'running') ctx.resume() })
   document.addEventListener('pointerdown', (e) => {
     const el = e.target.closest('button, select, label')
     if (el && !el.disabled) sfx.click()
