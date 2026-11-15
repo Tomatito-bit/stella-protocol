@@ -964,3 +964,15 @@ html, body { overflow-x: hidden; }
 .logbook > .page.left, .logbook > .rings, .logbook > .spread-nav { transition: opacity 0.2s; }
 .cover-opening { pointer-events: none; }
 .spread-flow .calendar { max-width: calc(100% - 160px); }
+
+/* ---------- Same notebook typography inside the two-page flow as inside a page ---------- */
+.spread-flow h2 { font-family: var(--hand); font-size: 44px; line-height: 1; color: #1b1e48; margin: 2px 0 6px; text-decoration: underline; text-decoration-color: rgba(214, 79, 92, 0.6); text-underline-offset: 6px; }
+.spread-flow h3 { font-family: var(--hand); font-size: 30px; color: #1b1e48; margin: 4px 0; }
+.spread-flow h4 { font-family: var(--hand); font-size: 24px; margin: 14px 0 4px; color: #1b1e48; }
+.spread-flow .stamp { font-family: var(--hand); font-size: 22px; }
+.spread-flow h2, .spread-flow h3, .spread-flow h4 { color: #1d2155; text-shadow: 0 0 0.6px rgba(29, 33, 85, 0.6); }
+.spread-flow .stamp, .spread-flow .page-nav, .spread-flow .link.dark { align-self: flex-start; }
+.spread-flow .coffee { display: none; }
+.spread-flow .section { margin: 6px 0 0; font-size: 20px; text-decoration: underline wavy rgba(214, 79, 92, 0.5); text-underline-offset: 4px; }
+.spread-flow { font-family: var(--hand); }
+.spread-flow .tiny, .spread-flow .hand-option small, .spread-flow .fact-note { font-family: 'Space Grotesk', sans-serif; }

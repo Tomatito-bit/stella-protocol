@@ -195,7 +195,13 @@ function Logbook() {
   const [spread, setSpread] = useState(() => (import.meta.env.DEV ? Number(new URLSearchParams(location.search).get('lpage')) || 0 : 0))
   // While the cover swings open, the left page stays hidden under it
   const [opening, setOpening] = useState(true)
-  useEffect(() => { const id = setTimeout(() => setOpening(false), 640); return () => clearTimeout(id) }, [])
+  // ...and once it has landed, the cover itself goes away (the real left page is underneath, identical)
+  const [coverOn, setCoverOn] = useState(true)
+  useEffect(() => {
+    const a = setTimeout(() => setOpening(false), 640)
+    const b = setTimeout(() => setCoverOn(false), 760)
+    return () => { clearTimeout(a); clearTimeout(b) }
+  }, [])
   const spreads = m.systems
     ? [['report', 'crew'], ['supplies', 'event'], ['tasks', 'plan']]
     : m.crew ? [['report', 'crew'], ['event', 'plan']] : [['report', 'supplies'], ['event', 'plan']]
@@ -221,10 +227,10 @@ function Logbook() {
     <div className="modal-bg logbook-bg">
       <div className={`logbook ${opening ? 'opening' : ''}`} style={{ '--cover': cover.color }}>
         {/* Opening: the cover swings open over the spiral while the left page is revealed */}
-        <div className="cover-opening" aria-hidden>
+        {coverOn && <div className="cover-opening" aria-hidden>
           <div className="cover-face front"><span>{t('journal')}</span><b>{t('day')} {m.day + 1}</b></div>
           <div className="cover-face back page left"><SpreadFlow kinds={spreads[spread]} inFace="left" /></div>
-        </div>
+        </div>}
         <div className="page left" aria-hidden />
         <div className="page right" aria-hidden />
         <div className="rings" aria-hidden />
