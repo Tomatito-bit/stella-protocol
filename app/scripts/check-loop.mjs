@@ -8,14 +8,16 @@ g.getState().launch()
 let days = 0
 while (g.getState().screen === 'mission' && days < 40) {
   const s = g.getState()
-  if (!s.journalOpen) throw new Error('logbook should open every morning')
+  // A morning with an event is first shown live; otherwise the logbook opens straight away
+  if (!s.journalOpen && !(s.event && s.live === s.event)) throw new Error('logbook should open (or the event play live) every morning')
+  if (!s.journalOpen) s.openJournal()
+  if (g.getState().live) throw new Error('opening the logbook should end the live alert')
   if (s.event) {
     const o = EVENTS[s.event].options[0]
     s.startDay() // must refuse until a choice is made
     if (g.getState().mission.day !== s.mission.day) throw new Error('day advanced without a decision')
     g.getState().pickOption(o.id, o.risk)
   }
-  g.getState().pickOrder('diego', 'rest')
   g.getState().startDay()
   days++
 }
