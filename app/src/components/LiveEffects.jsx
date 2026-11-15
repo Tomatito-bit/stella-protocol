@@ -125,3 +125,21 @@ export function SignalPulses() {
     </group>
   )
 }
+
+// The "Black Knight": a dark crumpled shape tumbling slowly past the craft
+export function Knight() {
+  const ref = useRef()
+  useFrame(({ clock }, dt) => {
+    const t = clock.getElapsedTime()
+    if (!ref.current) return
+    ref.current.rotation.x += dt * 0.4
+    ref.current.rotation.y += dt * 0.25
+    ref.current.position.set(2.6 + Math.sin(t * 0.15) * 0.8, 1.6 + Math.sin(t * 0.3) * 0.3, 1.2)
+  })
+  return (
+    <mesh ref={ref} scale={[1.1, 0.55, 0.8]}>
+      <dodecahedronGeometry args={[0.6, 0]} />
+      <meshStandardMaterial color="#141414" roughness={0.35} metalness={0.6} flatShading />
+    </mesh>
+  )
+}

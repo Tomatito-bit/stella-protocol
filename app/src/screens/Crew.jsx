@@ -4,6 +4,7 @@ import { useT } from '../i18n'
 import { CREW, SHIP_NAME } from '../data/crew'
 import { destinationById } from '../data/destinations'
 import { AstronautShowcase } from '../components/AstronautShowcase'
+import { PAST } from '../data/story'
 
 // How each style rates (0-5) on what matters during the mission
 const RATINGS = {
@@ -47,6 +48,7 @@ export default function Crew() {
         <p className="role-line"><span className="style-chip">{L(c.styleName)}</span> {L(c.role)}</p>
         <p className="lead quote-big">“{L(c.quote)}”</p>
         {c.bio && <p className="small crew-bio">{L(c.bio)}</p>}
+        {PAST[c.id] && <p className="small crew-past"><b>{t('beforeAstraea')}:</b> {L(PAST[c.id])}</p>}
 
         <div className="ratings">
           {Object.entries(RATINGS[c.style]).map(([k, v]) => (

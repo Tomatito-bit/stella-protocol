@@ -1,9 +1,40 @@
 // Story endings: which one you get depends on the result, Earth's voice (the antenna) and how the crew came home.
 
+// Endings when the mission is lost: what happened, and the real lesson NASA learned from something similar
+const LOST = {
+  crew: {
+    title: { es: 'Final: regreso de emergencia', en: 'Ending: emergency return' },
+    text: { es: 'Un tripulante quedó en estado crítico y la Astraea abortó la misión. El regreso fue una carrera contra el reloj, con el doctor sin dormir y el capitán al mando del puente todo el camino. Llegaron a tiempo, pero la ciencia se quedó atrás.', en: 'A crew member became critically ill and the Astraea aborted the mission. The trip home was a race against the clock, the doctor without sleep and the captain on the bridge the whole way. They made it in time, but the science was left behind.' },
+    lesson: { es: 'En enero de 2026 la NASA hizo la primera evacuación médica de la Estación Espacial: la salud de la tripulación siempre va primero.', en: 'In January 2026 NASA carried out the first medical evacuation of the Space Station: crew health always comes first.' },
+  },
+  o2: {
+    title: { es: 'Final: el último aliento', en: 'Ending: the last breath' },
+    text: { es: 'El aire se volvió irrespirable. Con mascarillas y los tanques de emergencia, la tripulación selló módulos y dio la vuelta. Volvieron vivos, pero la Astraea quedó flotando vacía en órbita.', en: 'The air became unbreathable. On masks and emergency tanks, the crew sealed modules and turned back. They came home alive, but the Astraea was left floating empty in orbit.' },
+    lesson: { es: 'En el Apolo 13 los filtros de CO₂ no encajaban y la tripulación tuvo que improvisar uno con cinta y cartón para sobrevivir.', en: 'On Apollo 13 the CO₂ filters didn’t fit and the crew had to rig one with tape and cardboard to survive.' },
+  },
+  engine: {
+    title: { es: 'Final: varados', en: 'Ending: stranded' },
+    text: { es: 'El último día, el motor principal no encendió. Sin la maniobra de regreso, la Astraea quedó atrapada en órbita esperando una nave de rescate. La Tierra volvió a quedarse en silencio, esta vez por mucho más tiempo.', en: 'On the last day the main engine failed to fire. Without the return burn, the Astraea was trapped in orbit waiting for a rescue ship. Earth went silent again, this time for much longer.' },
+    lesson: { es: 'Por eso las misiones reales prueban el motor una y otra vez y llevan combustible de sobra: una sola falla puede dejar a una nave sin regreso.', en: 'That is why real missions test the engine again and again and carry spare propellant: a single failure can leave a craft with no way home.' },
+  },
+  radiation: {
+    title: { es: 'Final: tormenta de partículas', en: 'Ending: particle storm' },
+    text: { es: 'La radiación frió la electrónica de la nave, circuito por circuito, hasta que las computadoras dejaron de responder. Lo último que llegó a la Tierra fue una línea de datos cortada a la mitad.', en: 'Radiation fried the craft’s electronics, circuit by circuit, until the computers stopped answering. The last thing to reach Earth was a line of data cut in half.' },
+    lesson: { es: 'La sonda Galileo sufrió fallas por la radiación de Júpiter, y por eso Juno y Europa Clipper protegen sus computadoras dentro de bóvedas blindadas.', en: 'The Galileo probe suffered radiation failures at Jupiter, which is why Juno and Europa Clipper keep their computers inside shielded vaults.' },
+  },
+  probe: {
+    title: { es: 'Final: silencio total', en: 'Ending: total silence' },
+    text: { es: 'Sin antenas funcionando, la sonda siguió su camino sola. Tal vez sigue tomando fotos que nadie verá jamás.', en: 'With no working antennas, the probe went on alone. Maybe it is still taking pictures no one will ever see.' },
+    lesson: { es: 'En 1999 la Mars Climate Orbiter se perdió por un error de unidades: la NASA aprendió a revisar cada dato dos veces.', en: 'In 1999 the Mars Climate Orbiter was lost to a units mix-up: NASA learned to check every number twice.' },
+  },
+}
+
 export function endingOf(m, level) {
-  if (m.lost) return {
-    title: { es: 'Final: la última transmisión', en: 'Ending: the last transmission' },
-    text: { es: 'La Astraea no pudo completar la misión. Lo que sí llegó a la Tierra fueron las lecciones: cada falla se estudió durante años para que la siguiente tripulación tuviera una oportunidad mejor. Así ha aprendido siempre la NASA.', en: 'The Astraea could not complete the mission. What did reach Earth were the lessons: every failure was studied for years so the next crew would have a better chance. That is how NASA has always learned.' },
+  if (m.lost) return LOST[m.lostWhy] || LOST.probe
+  if (level === 'fail') return {
+    title: { es: 'Final: con las manos vacías', en: 'Ending: empty-handed' },
+    text: { es: 'Volvieron a casa, pero sin los datos que prometieron. En la conferencia de prensa nadie aplaudió. La tripulación sabe que hizo lo que pudo… y que alguien tendrá que volver a intentarlo.', en: 'They came home, but without the data they promised. Nobody clapped at the press conference. The crew knows they did what they could… and that someone will have to try again.' },
+    lesson: { es: 'La NASA ha fallado muchas veces: cada misión que no logra su objetivo deja lecciones para la siguiente.', en: 'NASA has failed many times: every mission that misses its goal leaves lessons for the next one.' },
   }
   if (!m.voiceBack) return {
     title: { es: 'Final: el largo silencio', en: 'Ending: the long silence' },

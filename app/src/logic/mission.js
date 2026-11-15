@@ -2,6 +2,8 @@ import { CREW, crewById } from '../data/crew'
 import { DEFECTS } from '../data/events'
 import { TESTS, partById } from '../data/parts'
 import { summarize, count } from './budget'
+import { SECRET_EVENTS } from '../data/secretEvents'
+import { storyFor } from '../data/story'
 import { BROKEN, SYSTEMS, TASKS, taskKind, taskTarget, initialSystems, worstSystem } from './ship'
 
 // Seeded random numbers so a mission can be replayed
@@ -85,6 +87,11 @@ export function rollEvent(m, dest, commanderId) {
   const st = styleOf(commanderId)
   const pool = []
   const add = (id, w) => pool.push([id, w])
+  // Classified files (fan theories): rare, at most one per mission
+  if (m.day >= 3 && !m.secretSeen) {
+    const ids = Object.keys(SECRET_EVENTS).filter((id) => SECRET_EVENTS[id].dests.includes(dest.id))
+    add(ids[Math.floor(r() * ids.length)], 0.05)
+  }
   if (dest.crewed && m.crew) {
     const avg = (f) => m.crew.reduce((a, c) => a + c[f], 0) / m.crew.length
     const morale = avg('morale')
@@ -338,6 +345,22 @@ export function nextDay(m0, dest, commanderId, planIn, choice, opts = {}) {
     }
   }
 
+  // 1a. Classified files: investigate (pay a price, learn the truth) or leave it
+  if (choice && SECRET_EVENTS[choice.event]) {
+    const sec = SECRET_EVENTS[choice.event]
+    m.secretSeen = true
+    if (choice.option === 'investigate') {
+      m.secrets = [...(m.secrets || []), choice.event]
+      if (sec.options[0].needs === 'fuel' && m.spareTanks > 0) m.spareTanks -= 1
+      if (choice.event === 'marsDoor' || choice.event === 'moonLights') sciFactor *= 0.5
+      if (choice.event === 'wowSignal') crewHit('energy', -15)
+      if (choice.event === 'blackKnight' && r() < 0.3) { m.electronics = clamp(m.electronics - 10); note('bad', 'Un roce con el objeto dañó un poco la electrónica.', 'A brush with the object damaged the electronics a little.') }
+      m.science += 15
+      crewHit('morale', 10)
+      note('good', `ARCHIVO DESCLASIFICADO: ${sec.reveal.es} (+15 ciencia)`, `FILE DECLASSIFIED: ${sec.reveal.en} (+15 science)`)
+    } else note('warn', 'El archivo se queda cerrado. Nadie a bordo deja de pensar en eso.', 'The file stays closed. Nobody on board stops thinking about it.')
+  }
+
   // 1b. Ongoing social effects
   const fx = m.effects = { ...(m0.effects || {}) }
   if (fx.apathy) { sciFactor *= 0.8; if (plan === 'rest') { fx.apathy = false; note('good', 'El descanso cortó la apatía.', 'The rest broke the apathy.') } }
@@ -472,6 +495,11 @@ export function nextDay(m0, dest, commanderId, planIn, choice, opts = {}) {
   m.dose += doseToday * Math.max(0.3, 1 - m.shield * 0.15)
 
   // 5. Losing the mission
+  if (s.link === 0 && !dest.crewed) m.lostWhy = 'probe'
+  if (m.crew && m.crew.some((c) => c.health <= 0)) m.lostWhy = 'crew'
+  if (m.o2 <= 0) m.lostWhy = 'o2'
+  if (m.systems && day >= m.totalDays && m.systems.engine < BROKEN) m.lostWhy = 'engine'
+  if (m.electronics <= 0) m.lostWhy = 'radiation'
   if (s.link === 0 && !dest.crewed) m.lost = { es: 'Se perdió todo contacto con la sonda.', en: 'All contact with the probe was lost.' }
   if (m.crew && m.crew.some((c) => c.health <= 0)) m.lost = { es: 'Un tripulante quedó en estado crítico: la misión se aborta.', en: 'A crew member is in critical condition: the mission is aborted.' }
   if (m.o2 <= 0) m.lost = { es: 'Se acabó el oxígeno respirable: la misión se aborta.', en: 'Breathable oxygen ran out: the mission is aborted.' }
@@ -480,6 +508,8 @@ export function nextDay(m0, dest, commanderId, planIn, choice, opts = {}) {
 
   m.day = day
   m.over = !!m.lost || day >= m.totalDays
+  // Story moments of the day go first in the logbook
+  storyFor(day, dest, m.crew, m.totalDays).reverse().forEach((st) => notes.unshift({ type: 'story', text: { es: st.es, en: st.en } }))
   m.journal = [...m.journal, { day, plan, science: Math.round(sent), entries: notes, snap: { dose: m.dose, food: m.supplies, o2: m.o2, water: m.water } }]
   return m
 }

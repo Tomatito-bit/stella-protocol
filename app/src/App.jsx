@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useGame } from './store'
 import { isMuted, setMuted } from './sound'
+import { playMusic } from './music'
 import { useT } from './i18n'
 import Home from './screens/Home'
 import Destination from './screens/Destination'
@@ -17,6 +18,13 @@ const STEP_OF = { destination: 0, crew: 1, design: 2, review: 3, launch: 4, miss
 export default function App() {
   const screen = useGame((s) => s.screen)
   const Screen = SCREENS[screen]
+  const live = useGame((s) => s.live)
+  const event = useGame((s) => s.event)
+  // Music follows the moment: calm menus, launch drums, calm mission, brave theme while an event is on
+  useEffect(() => {
+    if (screen === 'legacy') return
+    playMusic(screen === 'launch' ? 'launch' : screen === 'mission' && (live || event) ? 'tense' : 'calm')
+  }, [screen, live, event])
   return (
     <div className="app">
       <Header />

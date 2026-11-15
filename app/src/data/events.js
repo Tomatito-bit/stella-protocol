@@ -1,4 +1,5 @@
 import { SOCIAL_EVENTS } from './socialEvents'
+import { SECRET_EVENTS } from './secretEvents'
 
 // Mission events. Each one is based on a real hazard (research/02, 03 and 07).
 // risk: 'safe' | 'medium' | 'risky' is shown on every option so the player sees the trade-off.
@@ -223,7 +224,7 @@ const BASE_EVENTS = {
   },
 }
 
-export const EVENTS = { ...BASE_EVENTS, ...SOCIAL_EVENTS }
+export const EVENTS = { ...BASE_EVENTS, ...SOCIAL_EVENTS, ...SECRET_EVENTS }
 
 // Hidden defects that environmental tests would have caught (team research doc 06)
 export const DEFECTS = {

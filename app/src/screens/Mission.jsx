@@ -80,23 +80,6 @@ export default function Mission() {
         )}
       </div>
 
-      <aside className="mission-panel">
-        {m.crew ? (
-          <>
-            <SystemsPanel />
-            <h3>{t('crewHud')}</h3>
-            <div className="crew-list">
-              {m.crew.map((c) => <CrewCard key={c.id} c={c} day={m.day} />)}
-            </div>
-          </>
-        ) : (
-          <>
-            <h3>{t('probeStatus')}</h3>
-            <p className="small">{t('probeStatusInfo')}</p>
-          </>
-        )}
-        <button className="btn big full" onClick={openJournal}>{t('openLogbook')}</button>
-      </aside>
 
       {journalOpen && <Logbook key={m.day} />}
       {m.systems && m.day === 0 && <Tutorial />}
@@ -112,27 +95,6 @@ function Meter({ label, v }) {
       <span className="hud-label">{label}</span>
       <b>{Math.round(v)}%</b>
       <div className="bar"><div style={{ width: `${Math.max(0, Math.min(100, v))}%` }} /></div>
-    </div>
-  )
-}
-
-// Ship systems: wear down every day, break suddenly, and get fixed by sending someone to repair
-function SystemsPanel() {
-  const { t, L } = useT()
-  const { mission: m, setTask } = useGame()
-  const engineer = m.crew.find((c) => c.duty === 'engineer') || m.crew[0]
-  return (
-    <div className="systems">
-      <h3>{t('systemsHud')}</h3>
-      {Object.entries(m.systems).map(([id, v]) => (
-        <div key={id} className={`system-row ${v < BROKEN ? 'broken' : v < 60 ? 'worn' : ''}`}>
-          <span className="system-name">{L(SYSTEMS[id].name)}</span>
-          <div className="bar"><div style={{ width: `${v}%` }} /></div>
-          <b>{v < BROKEN ? t('brokenShort') : `${Math.round(v)}%`}</b>
-          {v < 85 && <button className="sys-fix" onClick={() => setTask(engineer.id, `repair:${id}`)} title={t('sendEngineer')}>{t('fixShort')}</button>}
-        </div>
-      ))}
-      {!m.voiceBack && <p className="small story-goal">{t('goalAntenna')}</p>}
     </div>
   )
 }
@@ -160,8 +122,8 @@ function LiveAlert({ event, onOpen }) {
   }, [event, onOpen])
   if (!ev) return null
   return (
-    <div className={`live-alert ${ev.tier ? 'social' : ''}`} key={event}>
-      <span className="live-dot" /> <span className="live-tag">{t('liveNow')}</span>
+    <div className={`live-alert ${ev.secret ? 'secret' : ev.tier ? 'social' : ''}`} key={event}>
+      <span className="live-dot" /> <span className="live-tag">{ev.secret ? t('unknownSignal') : t('liveNow')}</span>
       <h3>{L(ev.title)}</h3>
       <p>{L(ev.text)}</p>
       <button className="btn glow" onClick={onOpen}>{t('decideNow')} →</button>
@@ -202,40 +164,6 @@ function Stat({ label, value, bad }) {
   )
 }
 
-function CrewCard({ c, day }) {
-  const { t, L } = useT()
-  const info = crewById[c.id]
-  const bio = biometrics(c, day)
-  return (
-    <div className="crew-card" style={{ '--accent': info.color }}>
-      <div className="crew-row">
-        <span className="avatar sm">{info.name.split(' ').map((w) => w[0]).join('')}</span>
-        <span className="crew-name"><b>{info.name.split(' ')[0]}{c.commander ? ' ★' : ''}</b><small>{L(info.role)}</small></span>
-        <span className="bio">
-          <span className={bio.heart > 95 ? 'bad' : ''}>♥ {bio.heart}</span>
-          <span>{bio.pressure}</span>
-        </span>
-      </div>
-      {useGame.getState().mission?.systems && <div className="crew-task"><span>{t('taskToday')}</span><TaskSelect c={c} /></div>}
-      <div className="vitals">
-        <Vital label={t('health')} v={c.health} />
-        <Vital label={t('morale')} v={c.morale} />
-        <Vital label={t('energy')} v={c.energy} />
-        <Vital label={t('fluids')} v={bio.fluid} invert />
-      </div>
-    </div>
-  )
-}
-
-function Vital({ label, v, invert }) {
-  const level = invert ? (v > 70 ? 'bad' : v > 45 ? 'mid' : '') : v < 35 ? 'bad' : v < 60 ? 'mid' : ''
-  return (
-    <div className={`vital ${level}`}>
-      <span>{label} <b>{Math.round(v)}</b></span>
-      <div className="bar"><div style={{ width: `${v}%` }} /></div>
-    </div>
-  )
-}
 
 // The logbook: left page = what happened, right page = today's decisions
 // The commander's colour dresses the logbook cover
@@ -364,7 +292,7 @@ function ReportPage() {
     o2: m.systems ? page.snap.o2 - prev.snap.o2 : null,
   } : null
   const pct = Math.min(100, Math.round((m.science / m.goal) * 100))
-  const icon = { good: '✓', bad: '✗', warn: '!' }
+  const icon = { good: '✓', bad: '✗', warn: '!', story: '✎' }
   return (
     <>
       <figure className="polaroid">
@@ -409,10 +337,21 @@ function ReportPage() {
   )
 }
 
+// A small bar drawn in ink: green, amber or red
+function HandBar({ label, v }) {
+  const level = v < 35 ? 'bad' : v < 60 ? 'mid' : ''
+  return (
+    <span className={`hand-bar ${level}`}>
+      <small className="hand">{label}</small>
+      <i><b style={{ width: `${Math.max(0, Math.min(100, v))}%` }} /></i>
+    </span>
+  )
+}
+
 // The crew, as taped photos (rendered in Blender) that change with how each person is doing
 function CrewPage() {
-  const { t, L } = useT()
-  const { mission: m, tasks } = useGame()
+  const { t } = useT()
+  const { mission: m } = useGame()
   const word = (v, hi, mid, lo) => (v > 66 ? hi : v > 33 ? mid : lo)
   return (
     <>
@@ -435,7 +374,13 @@ function CrewPage() {
                 {word(c.health, t('w_healthy'), t('w_hurt'), t('w_critical'))}, {word(c.energy, t('w_rested'), t('w_tired'), t('w_exhausted'))}, {word(c.morale, t('w_upbeat'), t('w_calm'), t('w_down'))}.
                 {sore && <span className="sore"> {t('w_sore')}</span>}
               </p>
-              {tasks && tasks[c.id] && <small className="hand muted">{t('taskToday')}: {L(TASKS[taskKind(tasks[c.id])].name).toLowerCase()}</small>}
+              <div className="hand-vitals">
+                <HandBar label={t('health')} v={c.health} />
+                <HandBar label={t('energy')} v={c.energy} />
+                <HandBar label={t('morale')} v={c.morale} />
+                <span className="pulse hand">♥ {biometrics(c, m.day).heart}</span>
+              </div>
+              {m.systems && <div className="photo-task"><span className="hand">{t('taskToday')}:</span><TaskSelect c={c} /></div>}
             </figure>
           )
         })}
@@ -447,8 +392,9 @@ function CrewPage() {
 // Inventory drawn like a supply shelf: ration packs, bottles, tanks, crates
 function SuppliesPage() {
   const { t, L } = useT()
-  const { mission: m, ration } = useGame()
+  const { mission: m, ration, setTask } = useGame()
   const dest = destinationById[useGame((s) => s.destinationId)]
+  const engineer = m.crew && (m.crew.find((c) => c.duty === 'engineer') || m.crew[0])
   const food = m.crew ? Math.max(0, Math.floor(m.supplies)) : null
   const power = Math.round(powerLevel(m, dest) * 100)
   const many = (n, max, Item) => (n > 0 ? Array.from({ length: Math.min(n, max) }, (_, i) => <Item key={i} i={i} />) : <Empty />)
@@ -485,6 +431,7 @@ function SuppliesPage() {
               <li key={id} className={v < BROKEN ? 'low circled' : ''}>
                 <span>{L(SYSTEMS[id].name)}</span>
                 <b>{v < BROKEN ? t('w_broken') : v < 60 ? t('w_worn') : t('w_ok')} ({Math.round(v)}%)</b>
+                {v < 85 && <button className="fix-link" onClick={() => setTask(engineer.id, `repair:${id}`)} title={t('sendEngineer')}>{t('fixShort')} →</button>}
               </li>
             ))}
           </ul>
@@ -505,8 +452,8 @@ function EventPage() {
     <>
       <span className="tiny">{t('today')} · {t('day')} {m.day + 1}</span>
       {ev ? (
-        <div className="today-event">
-          <EventDoodle event={event} />
+        <div className={`today-event ${ev.secret ? 'classified' : ''}`}>
+          {ev.secret ? <span className="classified-stamp">{t('classified')}</span> : <EventDoodle event={event} />}
           <h3>{L(ev.title)}</h3>
           <p className="hand">{L(ev.text)}</p>
           <div className="hand-options">

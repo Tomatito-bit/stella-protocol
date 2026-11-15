@@ -5,6 +5,8 @@ import { crewById } from '../data/crew'
 import { grade } from '../logic/mission'
 import { Planet3D } from '../components/Planet3D'
 import { endingOf, epilogueLine } from '../data/endings'
+import { useEffect } from 'react'
+import { playStinger } from '../music'
 
 // Mission ending: result, decision profile, crew epilogue and the real mission it was based on
 export default function Legacy() {
@@ -12,6 +14,7 @@ export default function Legacy() {
   const { mission: m, restart } = useGame()
   const dest = destinationById[useGame((s) => s.destinationId)]
   const { pct, level } = grade(m)
+  useEffect(() => { playStinger(level === 'success' || level === 'partial') }, [level])
   const risky = m.decisions.filter((d) => d.risk === 'risky').length
   const safe = m.decisions.filter((d) => d.risk === 'safe').length
   const profile = !m.decisions.length ? 'calm' : risky > safe ? 'bold' : safe > risky ? 'cautious' : 'balanced'
@@ -24,7 +27,7 @@ export default function Legacy() {
         <p className="eyebrow">{L(dest.name)} · {dest.realMission ? L(dest.realMission) : ''}</p>
         <h1 className={`result ${level}`}>{t(`result_${level}`)}</h1>
         {m.lost && <p className="lead">{L(m.lost)}</p>}
-        {m.crew && (() => { const e = endingOf(m, level); return <div className="ending"><h3>{L(e.title)}</h3><p>{L(e.text)}</p></div> })()}
+        {(m.crew || m.lost || level === 'fail') && (() => { const e = endingOf(m, level); return <div className={`ending ${m.lost || level === 'fail' ? 'lost' : ''}`}><h3>{L(e.title)}</h3><p>{L(e.text)}</p>{e.lesson && <p className="lesson"><b>{t('realLesson')}:</b> {L(e.lesson)}</p>}</div> })()}
         <div className="stats legacy-stats">
           <div><dt>{t('science')}</dt><dd>{pct}%</dd></div>
           <div><dt>{t('days')}</dt><dd>{m.day} / {m.totalDays}</dd></div>
@@ -32,6 +35,7 @@ export default function Legacy() {
           <div><dt>{t('electronics')}</dt><dd>{Math.round(m.electronics)}%</dd></div>
         </div>
 
+        {m.secrets && m.secrets.length > 0 && <p className="small secrets-found">{t('secretsFound', { n: m.secrets.length })}</p>}
         <h3>{t('profile')}: {t(`profile_${profile}`)}</h3>
         <p className="small">{t(`profile_${profile}_info`)} ({safe} {t('risk_safe').toLowerCase()} · {risky} {t('risk_risky').toLowerCase()})</p>
 

@@ -7,7 +7,7 @@ import { defaultTasks, carryTasks, BROKEN } from './logic/ship'
 import { sfx } from './sound'
 
 // Events you watch in orbit; the rest happen inside the ship
-const ORBIT_EVENTS = ['solarStorm', 'radiationBelt', 'micrometeoroid', 'dustStorm', 'dustDevil', 'dust', 'plume', 'opportunity', 'shadowIce', 'delay', 'conjunction', 'earthset', 'gyro', 'transistor']
+const ORBIT_EVENTS = ['faceMars', 'marsDoor', 'phobosMonolith', 'moonLights', 'blackKnight', 'wowSignal', 'solarStorm', 'radiationBelt', 'micrometeoroid', 'dustStorm', 'dustDevil', 'dust', 'plume', 'opportunity', 'shadowIce', 'delay', 'conjunction', 'earthset', 'gyro', 'transistor']
 const viewFor = (event, crewed) => (!crewed || ORBIT_EVENTS.includes(event) ? 'ship' : 'crew')
 const DANGER = ['solarStorm', 'radiationBelt', 'micrometeoroid', 'co2', 'medical', 'panic', 'dustStorm', 'catastrophe', 'deadlock', 'disobedience']
 

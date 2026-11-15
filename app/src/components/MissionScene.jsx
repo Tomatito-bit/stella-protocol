@@ -3,7 +3,7 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls, Stars, useTexture, Environment, Lightformer } from '@react-three/drei'
 import * as THREE from 'three'
 import { Ship } from './Ship3D'
-import { Meteors, DustStorm, Plume, Beacon, SignalPulses } from './LiveEffects'
+import { Meteors, DustStorm, Plume, Beacon, SignalPulses, Knight } from './LiveEffects'
 
 // The mission happens AT the chosen world: its real NASA map fills the view below the spacecraft.
 const MAPS = { moon: '/textures/moon.jpg', mars: '/textures/mars.jpg', europa: '/textures/europa.jpg' }
@@ -119,6 +119,9 @@ export const MissionScene = memo(function MissionScene({ destId, sel, crewed, sh
       {(event === 'dustStorm' || event === 'dustDevil' || event === 'dust') && <DustStorm />}
       {event === 'plume' && <Plume />}
       {(event === 'opportunity' || event === 'shadowIce') && <Beacon color={event === 'shadowIce' ? '#bfe9ff' : '#ffd166'} />}
+      {(event === 'faceMars' || event === 'marsDoor' || event === 'phobosMonolith' || event === 'moonLights') && <Beacon color="#ff3b5c" />}
+      {event === 'wowSignal' && <SignalPulses />}
+      {event === 'blackKnight' && <Knight />}
       {(event === 'delay' || event === 'conjunction' || event === 'earthset') && <SignalPulses />}
       <OrbitControls enablePan={false} enableZoom={false} minPolarAngle={1.1} maxPolarAngle={1.7} minAzimuthAngle={-0.6} maxAzimuthAngle={0.6} />
     </Canvas>

@@ -87,6 +87,9 @@ const STRINGS = {
     prevPage: 'Página anterior', nextPage: 'Siguiente página', whatHappened: 'Lo que pasó', crewPage: 'La tripulación', suppliesPage: 'Inventario y nave', planPage: 'El plan de hoy', daysShort: 'días', w_healthy: 'sano', w_hurt: 'lastimado', w_critical: 'grave', w_rested: 'con energía', w_tired: 'cansado', w_exhausted: 'agotado', w_upbeat: 'animado', w_calm: 'tranquilo', w_down: 'decaído', w_sore: 'Le duelen los huesos: necesita ejercicio.', w_broken: 'ROTO', w_worn: 'desgastado', w_ok: 'funciona', rationOn: 'Comida racionada hoy.', warnNoScience: 'Nadie investiga hoy: no habrá ciencia.', warnExhausted: '{n} está agotado y no descansa.', warnBroken: 'Hay un sistema roto y nadie lo repara.', warnAir: 'El oxígeno está bajo y nadie atiende el soporte vital.', warnSpares: 'No quedan refacciones para reparar lo que está roto.', warnEvent: 'Falta decidir el problema de hoy (página anterior).',
     liveNow: 'EN VIVO', decideNow: 'Decidir en la bitácora',
     rationShort: 'racionada',
+    classified: 'ARCHIVO CLASIFICADO', unknownSignal: 'TRANSMISIÓN NO IDENTIFICADA', secretsFound: 'Archivos clasificados abiertos: {n}',
+    realLesson: 'Lección real',
+    beforeAstraea: 'Antes de la Astraea',
     lang: 'English',
   },
   en: {
@@ -174,6 +177,9 @@ const STRINGS = {
     prevPage: 'Previous page', nextPage: 'Next page', whatHappened: 'What happened', crewPage: 'The crew', suppliesPage: 'Supplies and ship', planPage: 'Today’s plan', daysShort: 'days', w_healthy: 'healthy', w_hurt: 'hurt', w_critical: 'in bad shape', w_rested: 'rested', w_tired: 'tired', w_exhausted: 'exhausted', w_upbeat: 'upbeat', w_calm: 'calm', w_down: 'down', w_sore: 'Bones ache: needs exercise.', w_broken: 'DOWN', w_worn: 'worn', w_ok: 'working', rationOn: 'Food is rationed today.', warnNoScience: 'Nobody is researching today: no science.', warnExhausted: '{n} is exhausted and not resting.', warnBroken: 'A system is broken and nobody is fixing it.', warnAir: 'Oxygen is low and nobody is on life support.', warnSpares: 'No spare parts left to fix what is broken.', warnEvent: 'Today’s problem still needs a decision (previous page).',
     liveNow: 'LIVE', decideNow: 'Decide in the logbook',
     rationShort: 'rationed',
+    classified: 'CLASSIFIED FILE', unknownSignal: 'UNIDENTIFIED TRANSMISSION', secretsFound: 'Classified files opened: {n}',
+    realLesson: 'Real lesson',
+    beforeAstraea: 'Before the Astraea',
     lang: 'Español',
   },
 }

@@ -19,6 +19,12 @@ function audio() {
 }
 
 export const isMuted = () => muted
+
+// Shared output so the music goes through the same mute switch
+export function audioOut() {
+  const a = audio()
+  return a ? { ctx: a, out: master } : null
+}
 export function setMuted(v) {
   muted = v
   try { localStorage.setItem('stella-muted', v ? '1' : '0') } catch { /* private mode */ }
