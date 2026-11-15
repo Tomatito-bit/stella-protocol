@@ -23,7 +23,7 @@ const CUT = 9.6
 // Where the rocket is at time t (its base); everything else follows this path
 const pathAt = (t) => {
   const s = Math.max(0, t - T.liftoff)
-  return { x: s * s * 0.12, y: s * s * 0.9, s }
+  return { x: -s * s * 0.12, y: s * s * 0.9, s } // leans away from the tower (tower is on +x)
 }
 const smooth = (a, b, x) => { const k = Math.min(1, Math.max(0, (x - a) / (b - a))); return k * k * (3 - 2 * k) }
 const hash = (i, k) => { const x = Math.sin(i * 12.9898 + k * 78.233) * 43758.5453; return x - Math.floor(x) }
@@ -89,7 +89,7 @@ function Complex({ start }) {
   const glow = useSprite(GLOW)
   useFrame(({ clock }) => {
     const t = now()
-    if (arm.current) arm.current.rotation.y = -smooth(T.ignition - 2.5, T.ignition - 0.5, t) * 1.3 // crew access arm swings away
+    if (arm.current) arm.current.rotation.y = -smooth(T.ignition - 3, T.ignition - 1, t) * 1.5 // crew access arm swings away well before ignition
     beacons.current?.children.forEach((b, i) => { b.material.opacity = Math.sin(clock.getElapsedTime() * 3 + i) > 0 ? 1 : 0.15 })
   })
   const lattice = useMemo(() => {
@@ -110,7 +110,7 @@ function Complex({ start }) {
       <mesh position={[0, -0.4, 0]}><cylinderGeometry args={[2.4, 2.9, 0.4, 32]} /><meshStandardMaterial color="#8b8f97" roughness={0.9} /></mesh>
       <mesh position={[0, -0.18, 0]}><boxGeometry args={[3.2, 0.12, 3.2]} /><meshStandardMaterial color="#5b616b" roughness={0.8} /></mesh>
       {/* Lattice service tower */}
-      <group position={[2.3, -0.1, 0]}>
+      <group position={[3.3, -0.1, 0]}>
         {[[0.38, 0.38], [-0.38, 0.38], [0.38, -0.38], [-0.38, -0.38]].map(([x, z]) => (
           <mesh key={`${x}${z}`} position={[x, 5.6, z]}><boxGeometry args={[0.09, 11.5, 0.09]} /><meshStandardMaterial color="#b4472f" metalness={0.5} roughness={0.5} /></mesh>
         ))}
@@ -120,7 +120,7 @@ function Complex({ start }) {
         <mesh position={[0, 11.6, 0]}><cylinderGeometry args={[0.04, 0.04, 1.6, 6]} /><meshStandardMaterial color="#cbd5e1" /></mesh>
         {/* Crew access arm */}
         <group ref={arm} position={[-0.38, 8.2, 0]}>
-          <mesh position={[-0.7, 0, 0]}><boxGeometry args={[1.4, 0.35, 0.45]} /><meshStandardMaterial color="#d6d9de" metalness={0.4} roughness={0.5} /></mesh>
+          <mesh position={[-0.6, 0, 0]}><boxGeometry args={[1.2, 0.35, 0.45]} /><meshStandardMaterial color="#d6d9de" metalness={0.4} roughness={0.5} /></mesh>
         </group>
         <group ref={beacons}>
           {[11.3, 6.5].map((y) => <mesh key={y} position={[0, y, 0.45]}><sphereGeometry args={[0.09, 10, 10]} /><meshBasicMaterial color="#ff2a2a" transparent toneMapped={false} /></mesh>)}
@@ -208,7 +208,7 @@ function Rocket({ kind, sel, crewed, shield, start }) {
     const p = pathAt(t)
     if (rocket.current) {
       rocket.current.position.set(p.x, p.y, 0)
-      rocket.current.rotation.z = -Math.min(0.5, p.s * 0.05) // gravity turn
+      rocket.current.rotation.z = Math.min(0.5, p.s * 0.05) // gravity turn, away from the tower
     }
     if (light.current) light.current.intensity = t > T.ignition && t < T.meco ? 60 + Math.sin(clock.getElapsedTime() * 30) * 15 : 0
     if (stage1.current && t > T.meco) {

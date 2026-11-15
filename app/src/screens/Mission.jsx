@@ -98,7 +98,7 @@ export default function Mission() {
         <button className="btn big full" onClick={openJournal}>{t('openLogbook')}</button>
       </aside>
 
-      {journalOpen && <Logbook />}
+      {journalOpen && <Logbook key={m.day} />}
       {m.systems && m.day === 0 && <Tutorial />}
     </section>
   )
@@ -302,7 +302,12 @@ function Logbook() {
   return (
     <div className="modal-bg logbook-bg">
       <div className="logbook" style={{ '--cover': cover.color }}>
-        <div className="cover-opening" aria-hidden />
+        {/* Opening: the cover swings open over the spiral while the left page is revealed */}
+        <div className="open-mask" aria-hidden />
+        <div className="cover-opening" aria-hidden>
+          <div className="cover-face front"><span>{t('journal')}</span><b>{t('day')} {m.day + 1}</b></div>
+          <div className="cover-face back" />
+        </div>
         <div className="rings" aria-hidden />
         <div className="page left" key={`l-${left}`}>
           <LogPage kind={left} />

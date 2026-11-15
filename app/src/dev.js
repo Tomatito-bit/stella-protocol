@@ -34,3 +34,11 @@ export function loadDemo() {
   }
   useGame.setState({ screen, destinationId: dest, commanderId: 'valeria', selection: q.has('empty') ? {} : SAMPLE[dest], launcherId: dest === 'europa' ? 'heavy' : 'superheavy', tests: ['vacuum', 'vibration'] })
 }
+
+// Dev only: ?coverat=0.4 freezes the logbook opening at that second to check how it looks
+const coverAt = new URLSearchParams(location.search).get('coverat')
+if (coverAt) {
+  const st = document.createElement('style')
+  st.textContent = `.logbook, .cover-face, .open-mask { animation-play-state: paused !important; animation-delay: -${coverAt}s !important; }`
+  document.head.appendChild(st)
+}
