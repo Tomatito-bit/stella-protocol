@@ -40,11 +40,11 @@ export const CREW = [
   },
   {
     id: 'mei',
-    name: 'Mei Lin',
+    name: 'Lyra',
     role: { es: 'Analista de datos', en: 'Data analyst' },
     bio: {
-      es: 'La mente analítica de la tripulación. Procesa flujos enormes de información con interfaces holográficas y descifra señales de radio misteriosas que llegan de los confines del universo.',
-      en: 'The analytical mind of the crew. She processes huge streams of data through holographic interfaces and deciphers mysterious radio signals from the far reaches of the universe.',
+      es: 'La mente analítica de la Astraea. Su visor proyecta líneas de código sin parar y sus pantallas holográficas siempre están abiertas: procesa flujos enormes de datos y descifra señales de radio misteriosas de los confines del universo. Confía más en los números que en las corazonadas, y cuando la Tierra se queda en silencio, sus cálculos son lo único que le dice a la tripulación qué tan cerca está el peligro. Le cuesta el encierro, aunque nunca lo admite.',
+      en: 'The analytical mind of the Astraea. Her visor scrolls code nonstop and her holographic screens are always open: she processes huge streams of data and deciphers mysterious radio signals from the edge of the universe. She trusts numbers over hunches, and when Earth goes silent her calculations are the only thing telling the crew how close danger is. Confinement weighs on her, though she never admits it.',
     },
     duty: 'scientist',
     skin: '#f1d0b0', hair: '#0f0f14',
@@ -58,8 +58,12 @@ export const CREW = [
   },
   {
     id: 'kwame',
-    name: 'Kwame Mensah',
-    role: { es: 'Cirujano espacial', en: 'Space surgeon' },
+    name: 'Ezra',
+    role: { es: 'Doctor · cirujano espacial', en: 'Doctor · space surgeon' },
+    bio: {
+      es: 'El doctor Ezra es el cirujano espacial de la Astraea. Lleva la cruz médica en el casco y su visor analiza células y signos vitales en tiempo real. Entrenado para operar en gravedad cero con lo que haya a mano, vigila la radiación, el sueño y el ánimo de cada tripulante. Es la voz calmada en las peleas, y el único que se atreve a decirle al capitán que la tripulación ya no puede más.',
+      en: 'Doctor Ezra is the space surgeon of the Astraea. He wears the medical cross on his helmet and his visor scans cells and vital signs in real time. Trained to operate in zero gravity with whatever is at hand, he watches every crewmate’s radiation, sleep and morale. He is the calm voice in arguments, and the only one who dares tell the captain the crew has had enough.',
+    },
     duty: 'doctor',
     skin: '#6b4226', hair: '#120c08',
     style: 'diplomat',
