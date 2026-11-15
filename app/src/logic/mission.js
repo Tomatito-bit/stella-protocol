@@ -477,7 +477,7 @@ export function nextDay(m0, dest, commanderId, planIn, choice, opts = {}) {
 
   m.day = day
   m.over = !!m.lost || day >= m.totalDays
-  m.journal = [...m.journal, { day, plan, science: Math.round(sent), entries: notes }]
+  m.journal = [...m.journal, { day, plan, science: Math.round(sent), entries: notes, snap: { dose: m.dose, food: m.supplies, o2: m.o2, water: m.water } }]
   return m
 }
 

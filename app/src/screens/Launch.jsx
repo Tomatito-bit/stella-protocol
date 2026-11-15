@@ -21,7 +21,8 @@ export default function Launch() {
   const shield = summarize(dest, selection, launcherId, tests).shield
 
   useEffect(() => {
-    start.current = performance.now()
+    // Dev only: ?t=9 jumps into the launch at that second
+    start.current = performance.now() - (import.meta.env.DEV ? Number(new URLSearchParams(location.search).get('t')) || 0 : 0) * 1000
     let id
     let last = -1
     const tick = () => {

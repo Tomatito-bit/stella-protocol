@@ -736,3 +736,32 @@ h2 { font-size: 26px; }
 .crew-photo .photo[style] { background-size: 165% auto; background-position: 50% 8%; }
 .crew-photo .photo[style] { background-size: auto 150%; background-position: 50% 6%; }
 .crew-photo .photo { height: 150px; }
+
+/* ---------- Logbook report page: richer and tidier ---------- */
+.page .coffee { display: none; }
+.page-head h2 { margin: 2px 0 6px; }
+.calendar { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 10px; max-width: 74%; }
+.calendar span { position: relative; width: 26px; height: 24px; display: grid; place-items: center; font-family: var(--hand); font-size: 16px; border: 1.5px solid rgba(35, 38, 74, 0.45); border-radius: 3px; color: var(--ink); }
+.calendar span.past { color: rgba(35, 38, 74, 0.35); }
+.calendar span.past::after { content: ''; position: absolute; inset: 2px; background: linear-gradient(45deg, transparent 46%, #b0283a 47%, #b0283a 53%, transparent 54%), linear-gradient(-45deg, transparent 46%, #b0283a 47%, #b0283a 53%, transparent 54%); opacity: 0.75; }
+.calendar span.today { border: 2px solid #b0283a; border-radius: 50%; font-weight: 700; transform: rotate(-4deg) scale(1.1); }
+.day-stamps { display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0 6px; }
+.day-stamps .stamp { font-size: 19px; padding: 0 8px; }
+.day-stamps .stamp.good { color: #2f7a4b; border-color: rgba(47, 122, 75, 0.6); }
+.day-stamps .stamp.bad { color: #b0283a; border-color: rgba(176, 40, 58, 0.6); transform: rotate(1.5deg); }
+.page .section { margin: 6px 0 0; font-size: 20px; text-decoration: underline wavy rgba(214, 79, 92, 0.5); text-underline-offset: 4px; }
+.entries.marked { list-style: none; padding: 0; margin: 4px 0 8px; }
+.entries.marked li { display: flex; gap: 8px; align-items: baseline; font-size: 21px; line-height: 1.25; margin: 3px 0; }
+.entries.marked li::before { content: none; }
+.entries.marked li i { font-style: normal; flex-shrink: 0; width: 20px; height: 20px; display: inline-grid; place-items: center; border-radius: 50%; font-size: 14px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: #fff; transform: translateY(-1px); }
+.entries.marked li.good i { background: #2f7a4b; }
+.entries.marked li.bad i { background: #b0283a; }
+.entries.marked li.warn i { background: #c98a1a; }
+.sci-progress { margin: 6px 0 10px; }
+.sci-progress .hand { font-size: 19px; }
+.hatch { height: 14px; border: 2px solid var(--ink); border-radius: 3px; margin-top: 2px; transform: rotate(-0.4deg); }
+.hatch > div { height: 100%; background: repeating-linear-gradient(-45deg, #2f7a4b 0 3px, transparent 3px 7px); }
+.sticky { align-self: flex-end; width: 62%; margin: 4px 0 6px; padding: 10px 12px 8px; background: #fff3a0; box-shadow: 2px 4px 8px rgba(0, 0, 0, 0.15); transform: rotate(1.5deg); font-family: var(--hand); font-size: 20px; line-height: 1.15; color: #3a3a52; border-top: 6px solid color-mix(in srgb, var(--accent) 70%, #fff3a0); }
+.sticky b { display: block; text-align: right; color: var(--accent); margin-top: 4px; }
+.today-event { position: relative; }
+.event-doodle { float: right; width: 74px; height: 74px; margin: 0 0 6px 10px; transform: rotate(4deg); }

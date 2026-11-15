@@ -77,3 +77,53 @@ export function Empty() {
     </svg>
   )
 }
+
+// A drawing in the corner of the event page, by kind of event
+const KIND = {
+  sun: ['solarStorm', 'radiationBelt', 'transistor'],
+  rock: ['micrometeoroid'],
+  med: ['medical', 'disobedience', 'fatigueIgnored', 'gravity'],
+  talk: ['conflict', 'routineClash', 'pilotEngineer', 'scienceVsSafety', 'enginesHot', 'authority', 'deadlock', 'analystParanoia', 'riskReport', 'catastrophe', 'panic', 'thirdQuarter'],
+  tool: ['co2', 'gyro', 'drill', 'dust', 'vacuum', 'vibration', 'deployment'],
+  signal: ['delay', 'conjunction', 'earthset', 'homeMessage'],
+  star: ['opportunity', 'shadowIce', 'plume', 'dustDevil', 'harvest', 'dustStorm'],
+}
+export function EventDoodle({ event }) {
+  const kind = Object.keys(KIND).find((k) => KIND[k].includes(event)) || 'star'
+  const red = '#d64f5c'
+  return (
+    <svg viewBox="0 0 90 90" className={`doodle event-doodle ${kind}`} aria-hidden>
+      {kind === 'sun' && <>
+        <circle cx="45" cy="45" r="16" {...ink} fill="#ffd166" />
+        {Array.from({ length: 12 }, (_, i) => { const a = (i / 12) * Math.PI * 2; return <path key={i} d={`M${45 + Math.cos(a) * 22} ${45 + Math.sin(a) * 22} L${45 + Math.cos(a) * (i % 2 ? 32 : 38)} ${45 + Math.sin(a) * (i % 2 ? 32 : 38)}`} {...ink} stroke={i % 2 ? INK : red} /> })}
+      </>}
+      {kind === 'rock' && <>
+        <path d="M8 12 L48 44 M14 6 L52 38 M4 22 L42 50" {...ink} strokeDasharray="4 5" />
+        <path d="M44 40 Q52 30 64 36 Q76 40 72 54 Q66 66 52 62 Q40 58 44 40 Z" {...ink} fill="#b9a88f" />
+        <circle cx="56" cy="48" r="3" {...ink} /><circle cx="64" cy="54" r="2" {...ink} />
+      </>}
+      {kind === 'med' && <>
+        <rect x="18" y="18" width="54" height="54" rx="10" {...ink} fill="#fff" />
+        <path d="M38 28 H52 V38 H62 V52 H52 V62 H38 V52 H28 V38 H38 Z" {...ink} fill={red} />
+      </>}
+      {kind === 'talk' && <>
+        <path d="M8 18 H50 Q56 18 56 24 V42 Q56 48 50 48 H24 L14 58 V48 H8 Q4 48 4 42 V24 Q4 18 8 18 Z" {...ink} fill="#fff" />
+        <path d="M40 40 H80 Q86 40 86 46 V64 Q86 70 80 70 H74 V80 L64 70 H40 Q34 70 34 64 V46 Q34 40 40 40 Z" {...ink} fill="#ffe1e1" />
+        <path d="M16 30 H44 M16 38 H36 M46 52 H76 M46 60 H66" {...ink} strokeWidth="1.5" />
+      </>}
+      {kind === 'tool' && <>
+        <path d="M22 70 L56 36 M60 18 Q74 14 76 28 L68 30 L64 26 L60 30 L62 36 Q48 40 56 36" {...ink} />
+        <path d="M18 66 L26 74 L22 78 L14 70 Z" {...ink} fill="#c9a26b" />
+        <circle cx="66" cy="66" r="10" {...ink} strokeDasharray="5 4" /><circle cx="66" cy="66" r="3" {...ink} />
+      </>}
+      {kind === 'signal' && <>
+        <path d="M30 70 L45 30 L60 70 M36 56 H54" {...ink} />
+        <circle cx="45" cy="26" r="4" {...ink} fill={red} />
+        <path d="M30 18 Q45 4 60 18 M22 12 Q45 -8 68 12" {...ink} strokeDasharray="4 4" />
+      </>}
+      {kind === 'star' && <>
+        <path d="M45 8 L54 34 L82 34 L59 50 L68 78 L45 61 L22 78 L31 50 L8 34 L36 34 Z" {...ink} fill="#ffe08a" />
+      </>}
+    </svg>
+  )
+}

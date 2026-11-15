@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { startHum, stopHum, sfx } from '../sound'
 import { TUTORIAL } from '../data/tutorial'
+import { quoteOfDay } from '../data/quotes'
+import { EventDoodle } from '../components/Doodles'
 import { FoodPack, LevelDoodle, SpareCrate, FuelTank, Empty } from '../components/Doodles'
 import { useGame } from '../store'
 import { useT } from '../i18n'
@@ -342,24 +344,56 @@ function ReportPage() {
   const { t, L } = useT()
   const { mission: m } = useGame()
   const destId = useGame((s) => s.destinationId)
+  const dest = destinationById[destId]
   const [back, setBack] = useState(0)
-  const page = m.journal[m.journal.length - 1 - back]
+  const idx = m.journal.length - 1 - back
+  const page = m.journal[idx]
+  const prev = m.journal[idx - 1]
+  const quote = back === 0 ? quoteOfDay(m.crew, m.day) : null
+  // What changed today (from the end-of-day snapshots)
+  const d = page.snap && prev && prev.snap ? {
+    dose: page.snap.dose - prev.snap.dose,
+    food: page.snap.food != null && prev.snap.food != null ? page.snap.food - prev.snap.food : null,
+    o2: m.systems ? page.snap.o2 - prev.snap.o2 : null,
+  } : null
+  const pct = Math.min(100, Math.round((m.science / m.goal) * 100))
+  const icon = { good: '✓', bad: '✗', warn: '!' }
   return (
     <>
-      <div className="coffee" aria-hidden />
       <figure className="polaroid">
         <div className="polaroid-img" style={{ backgroundImage: `url(/textures/${destId}.jpg)` }} />
-        <figcaption>{t('day')} {page.day}</figcaption>
+        <figcaption>{L(dest.name)}</figcaption>
       </figure>
       <div className="page-head">
-        <span className="tiny">{t('journal')}</span>
+        <span className="tiny">{t('journal')} · Astraea</span>
         <h2>{page.day === 0 ? t('arrival') : `${t('day')} ${page.day}`}</h2>
-        <p className="hand muted">{t('whatHappened')}</p>
       </div>
-      <ul className="hand entries">
-        {page.entries.length ? page.entries.map((e, k) => <li key={k} className={e.type}>{L(e.text)}</li>) : <li>{t('quietDay')}</li>}
+      {/* Mission calendar: past days crossed out, today circled */}
+      <div className="calendar" aria-label={`${t('day')} ${m.day} / ${m.totalDays}`}>
+        {Array.from({ length: m.totalDays }, (_, i) => <span key={i} className={i < page.day ? 'past' : i === page.day ? 'today' : ''}>{i + 1}</span>)}
+      </div>
+      {d && (
+        <div className="day-stamps">
+          {page.science > 0 && <span className="stamp good">+{page.science} {t('science').toLowerCase()}</span>}
+          {d.dose > 0.05 && <span className={`stamp ${d.dose > 3 ? 'bad' : ''}`}>+{d.dose.toFixed(1)} mSv</span>}
+          {d.food != null && d.food < 0 && <span className="stamp">{Math.round(d.food * 10) / 10} {t('daysShort')} {t('supplies').toLowerCase()}</span>}
+          {d.o2 != null && Math.abs(d.o2) >= 1 && <span className={`stamp ${d.o2 < 0 ? 'bad' : 'good'}`}>O₂ {d.o2 > 0 ? '+' : ''}{Math.round(d.o2)}%</span>}
+        </div>
+      )}
+      <p className="hand muted section">{t('whatHappened')}</p>
+      <ul className="hand entries marked">
+        {page.entries.length ? page.entries.map((e, k) => <li key={k} className={e.type}><i>{icon[e.type] || '·'}</i>{L(e.text)}</li>) : <li className="good"><i>✓</i>{t('quietDay')}</li>}
       </ul>
-      {page.science > 0 && <p className="stamp">+{page.science} {t('science').toLowerCase()}</p>}
+      <div className="sci-progress">
+        <span className="hand">{t('science')} {Math.round(m.science)} / {m.goal}</span>
+        <div className="hatch"><div style={{ width: `${pct}%` }} /></div>
+      </div>
+      {quote && (
+        <p className="sticky" style={{ '--accent': crewById[quote.id].color }}>
+          “{L(quote.text)}”
+          <b>— {crewById[quote.id].name.split(' ')[0]}</b>
+        </p>
+      )}
       <div className="page-nav">
         <button onClick={() => setBack(back + 1)} disabled={back >= m.journal.length - 1}>← {t('before')}</button>
         {back > 0 && <button onClick={() => setBack(back - 1)}>{t('after')} →</button>}
@@ -465,6 +499,7 @@ function EventPage() {
       <span className="tiny">{t('today')} · {t('day')} {m.day + 1}</span>
       {ev ? (
         <div className="today-event">
+          <EventDoodle event={event} />
           <h3>{L(ev.title)}</h3>
           <p className="hand">{L(ev.text)}</p>
           <div className="hand-options">
