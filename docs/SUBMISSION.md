@@ -42,10 +42,10 @@ https://github.com/Tomatito-bit/stella-protocol
 
 **Tools:**
 - **Code:** JavaScript, React 19, Vite, Three.js / @react-three/fiber / @react-three/drei, zustand, Web Audio API.
-- **3D:** Google Gemini to generate the astronaut models, and Blender 5.3 to prepare them, build the ship and optimize NASA's models.
+- **3D:** Blender 5.3 to model the astronauts (from a Google Gemini reference image) and the ship, and to optimize NASA's models.
 - **Hosting:** Vercel.
 - **Testing:** oxlint plus an automated suite of about 87,000 checks and a browser smoke test.
-- **AI assistance:** Anthropic's Claude helped write code and text under the team's direction, and Google Gemini generated the astronaut models. See "Use of AI" in the README.
+- **AI assistance:** Anthropic's Claude helped write code and text under the team's direction, and Google Gemini generated the reference image for the astronauts, which the team modelled in Blender. See "Use of AI" in the README.
 - **Design reference:** the home screen was inspired by a design found on Pinterest.
 
 ## Space Agency Data *
@@ -75,7 +75,7 @@ https://github.com/Tomatito-bit/stella-protocol
 - Libraries (MIT License): React, Vite, Three.js, @react-three/fiber, @react-three/drei, zustand
 - Fonts (SIL OFL): Space Grotesk, Orbitron, Caveat (Google Fonts)
 - Music and sound effects: original, synthesized in code by the team
-- AI assistance: Anthropic Claude (code and text, directed and reviewed by the team) and Google Gemini (astronaut 3D models, prepared in Blender by the team)
+- AI assistance: Anthropic Claude (code and text, directed and reviewed by the team) and Google Gemini (reference image for the astronauts, modelled in Blender by the team)
 - Home screen: inspired by a reference design found on Pinterest
   > TODO (team): add the Pinterest link or the original creator's name here if you have it.
 
