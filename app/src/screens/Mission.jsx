@@ -739,8 +739,12 @@ function PlanPage() {
         <ul className="hand entries plan-lines">
           {m.crew.map((c) => {
             const task = tasks && tasks[c.id]
-            const target = task && task.split(':')[1]
-            return <li key={c.id}><b>{crewById[c.id].name.split(' ')[0]}</b>: {L(TASKS[taskKind(task)].name).toLowerCase()}{target ? ` · ${L(SYSTEMS[target].name).toLowerCase()}` : ''}</li>
+            // A repair names the system; a rover drive (explore:<site>) names the site, never a system
+            const kind = taskKind(task)
+            const target = taskTarget(task)
+            const where = kind === 'repair' && SYSTEMS[target] ? L(SYSTEMS[target].name).toLowerCase()
+              : kind === 'explore' && target && m.explore && siteName(m, task) ? L(siteName(m, task)) : ''
+            return <li key={c.id}><b>{crewById[c.id].name.split(' ')[0]}</b>: {L(TASKS[kind].name).toLowerCase()}{where ? ` · ${where}` : ''}</li>
           })}
           {ration && <li className="warn">{t('rationOn')}</li>}
         </ul>
