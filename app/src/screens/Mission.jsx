@@ -211,11 +211,19 @@ function Logbook() {
   const freeze = import.meta.env.DEV ? new URLSearchParams(location.search).get('flipat') : null
   const [frozen] = useState(() => (freeze ? { to: 1, dir: 1 } : null))
   const active = flip || frozen
+  // On a phone the book is a single page: no sheet swinging over the spiral, the new page simply
+  // slides in and the reader goes back to the top of it
+  const phone = () => window.matchMedia('(max-width: 900px)').matches
   const turn = (k) => {
     if (flip || k === 0) return
     sfx.page()
+    if (phone()) { setSpread(spread + k); return }
     setFlip({ to: spread + k, dir: k > 0 ? 1 : -1 })
   }
+  useEffect(() => {
+    const bg = document.querySelector('.logbook-bg')
+    if (bg) bg.scrollTo({ top: 0, behavior: 'instant' })
+  }, [spread])
   const done = () => { setSpread(flip.to); setFlip(null) }
   // Each spread is ONE text flowing in two columns: what doesn't fit on the left page continues on the right
   const target = active ? active.to : spread

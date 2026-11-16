@@ -1058,3 +1058,14 @@ html, body { overflow-x: hidden; }
   .ration { align-items: flex-start; line-height: 1.25; font-size: 17px; }
   .ration input { flex: 0 0 auto; width: 18px; height: 18px; margin-top: 3px; }
 }
+
+/* Phone: the logbook opens and turns pages as a single sheet (no two-page cover swing, no half-page clipping) */
+@media (max-width: 900px) {
+  .logbook .cover-opening, .logbook .flip-sheet { display: none; }
+  .logbook.opening .spread-flow { clip-path: none; }
+  .logbook.opening > .page-dots, .logbook.opening > .spread-nav { opacity: 1; }
+  .logbook { animation: phone-book-in 0.35s ease-out; }
+  .logbook .spread-flow { animation: phone-page-in 0.28s ease-out; }
+}
+@keyframes phone-book-in { from { opacity: 0; transform: translateY(24px) scale(0.98); } to { opacity: 1; transform: none; } }
+@keyframes phone-page-in { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
