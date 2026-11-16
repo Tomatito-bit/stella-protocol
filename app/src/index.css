@@ -1031,3 +1031,30 @@ html, body { overflow-x: hidden; }
   .closed-logbook { width: 112px; height: 144px; bottom: 80px !important; right: 10px; }
   .closed-logbook .cover-hint { display: none; }
 }
+
+/* ---------- Phone logbook polish ---------- */
+@media (max-width: 900px) {
+  /* Page-turn buttons stay pinned to the bottom of the screen, on the paper, never cut off */
+  .spread-flow { padding-bottom: 18px; border-radius: 10px 10px 0 0; }
+  .logbook > .spread-nav {
+    position: sticky; bottom: 0; left: auto; right: auto; z-index: 6;
+    padding: 6px 10px calc(6px + env(safe-area-inset-bottom));
+    background: #efe4c9; border-top: 1.5px dashed rgba(35, 38, 74, 0.25); border-radius: 0 0 10px 10px;
+    box-shadow: 0 -6px 12px rgba(80, 60, 20, 0.12);
+  }
+  .spread-nav button { font-size: 21px; }
+  .spread-nav button:only-child { margin-left: auto; }
+  .spread-nav button:first-child:only-child { margin-left: 0; }
+  /* Crew photos: the three bars get their own row, the heart rate its own line */
+  .hand-vitals { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px 6px; }
+  .hand-bar small { font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hand-vitals .pulse { grid-column: 1 / -1; font-size: 15px; line-height: 1; }
+  .photo-task { align-items: flex-start; line-height: 1.15; font-size: 15px; }
+  .photo-task .task-icon { flex: 0 0 auto; margin-top: 1px; }
+  /* Job stickers in two rows so every label is readable */
+  .stickers { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+  .sticker span { font-size: 13px; overflow: visible; padding: 0 2px; }
+  /* Ration checkbox lines up with the first line of its text */
+  .ration { align-items: flex-start; line-height: 1.25; font-size: 17px; }
+  .ration input { flex: 0 0 auto; width: 18px; height: 18px; margin-top: 3px; }
+}
