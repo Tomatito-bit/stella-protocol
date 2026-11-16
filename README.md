@@ -66,12 +66,12 @@ Full research notes with links are in [`research/`](research/).
 
 ## Use of AI
 
-The team designed the game and directed every decision. Most of the code, the Blender processing scripts and the text were written with the help of an AI coding assistant (Anthropic's Claude), working under the team's direction. The team reviewed every feature in the game and fact-checked the facts shown to players against the sources listed in `research/`. No AI-generated images or audio are used. The music is synthesized live in code, and the 3D astronauts and ship were modelled in Blender.
+The team designed the game and directed every decision. Most of the code, the Blender processing scripts and the text were written with the help of an AI coding assistant (Anthropic's Claude), working under the team's direction. The team reviewed every feature in the game and fact-checked the facts shown to players against the sources listed in `research/`. The 3D astronaut models were generated with Google Gemini and then prepared in Blender for the game (rigging, colours and optimization). The home screen design was inspired by a reference image found on Pinterest. No AI-generated audio is used: the music is synthesized live in code. The ship deck was modelled in Blender.
 
 ## Built with
 
 - **Game:** React 19, Vite, Three.js through @react-three/fiber and @react-three/drei, zustand.
-- **Graphics:** procedural shaders (the Earth is generated and baked on the GPU), Blender 5.3 for the astronauts, the ship deck and the NASA model optimization.
+- **Graphics:** procedural shaders (the Earth is generated and baked on the GPU), Google Gemini for the astronaut models, and Blender 5.3 to prepare them, build the ship deck and optimize the NASA models.
 - **Sound:** Web Audio API, with an original organ score and sound effects synthesized in code (no audio files).
 - **Quality:** oxlint, plus an automated test suite of about 87,000 checks (thousands of simulated missions, collision tests for the crew's walking paths, translations and assets) and a browser smoke test.
 - **Hosting:** Vercel, deployed automatically from this repository.
@@ -92,7 +92,7 @@ npm run build      # production build in app/dist
 | Folder | Contents |
 |---|---|
 | `app/` | Game source code |
-| `app/public/models` | 3D models: astronaut and ship deck (made in Blender), and the lightened NASA vehicles |
+| `app/public/models` | 3D models: astronaut (generated with Google Gemini, prepared in Blender), ship deck (made in Blender) and the lightened NASA vehicles |
 | `assets/` | Source files: Blender scenes and texture sources |
 | `research/` | NASA research behind the game, with sources |
 | `docs/game-design/` | Game design notes |
@@ -105,6 +105,8 @@ npm run build      # production build in app/dist
 - **Fonts:** Space Grotesk, Orbitron and Caveat from Google Fonts (SIL Open Font License).
 - **Libraries:** React, Vite, Three.js, @react-three/fiber, @react-three/drei and zustand (MIT License).
 - **Research sources:** see [`research/05-sources.md`](research/05-sources.md) and [`research/09-fan-theories.md`](research/09-fan-theories.md).
+- **Astronaut models:** generated with Google Gemini (AI), then prepared in Blender by the team.
+- **Home screen:** design inspired by a reference image found on Pinterest.
 - The NASA logo is not used, and this project is not endorsed by NASA.
 
 > A Spanish twin of this repository exists for the team's local work. Everything submitted is in English.

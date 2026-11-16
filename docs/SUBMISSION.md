@@ -42,10 +42,11 @@ https://github.com/Tomatito-bit/stella-protocol
 
 **Tools:**
 - **Code:** JavaScript, React 19, Vite, Three.js / @react-three/fiber / @react-three/drei, zustand, Web Audio API.
-- **3D:** Blender 5.3.
+- **3D:** Google Gemini to generate the astronaut models, and Blender 5.3 to prepare them, build the ship and optimize NASA's models.
 - **Hosting:** Vercel.
 - **Testing:** oxlint plus an automated suite of about 87,000 checks and a browser smoke test.
-- **AI assistance:** Anthropic's Claude helped write code and text under the team's direction. See "Use of AI" in the README.
+- **AI assistance:** Anthropic's Claude helped write code and text under the team's direction, and Google Gemini generated the astronaut models. See "Use of AI" in the README.
+- **Design reference:** the home screen was inspired by a design found on Pinterest.
 
 ## Space Agency Data *
 - **NASA 3D Resources:** Mars 2020 Perseverance Rover, Ingenuity Mars Helicopter and Apollo Lunar Module models, used as exploration vehicles in the 3D surface view.
@@ -74,7 +75,9 @@ https://github.com/Tomatito-bit/stella-protocol
 - Libraries (MIT License): React, Vite, Three.js, @react-three/fiber, @react-three/drei, zustand
 - Fonts (SIL OFL): Space Grotesk, Orbitron, Caveat (Google Fonts)
 - Music and sound effects: original, synthesized in code by the team
-- AI assistance: Anthropic Claude (code and text, directed and reviewed by the team)
+- AI assistance: Anthropic Claude (code and text, directed and reviewed by the team) and Google Gemini (astronaut 3D models, prepared in Blender by the team)
+- Home screen: inspired by a reference design found on Pinterest
+  > TODO (team): add the Pinterest link or the original creator's name here if you have it.
 
 ---
 
@@ -86,7 +89,7 @@ https://github.com/Tomatito-bit/stella-protocol
 - [ ] **Demo** link opens in a private/incognito window and is ONE link: a video of 30 s or less (with English subtitles if needed) or 7 slides or fewer, in English.
 - [ ] The playable link https://stella-protocol.vercel.app is mentioned in the description.
 - [ ] Both required boxes are checked: the submission requirements and terms, and the original-work statement with all external resources listed in References.
-- [ ] No copyrighted material is used without permission: no NASA logo, original music, and public-domain textures and models, all credited.
+- [ ] No copyrighted material is used without permission: no NASA logo, original music, and public-domain textures and models, all credited. The Pinterest reference for the home screen is credited in References.
 - [ ] Submitted before the deadline, in your local event's time zone.
 
 **Judging criteria:** Impact, Creativity, Validity, Relevance and Presentation. Presentation weighs as much as the others, so the demo matters.
